@@ -1,0 +1,93 @@
+The Auto Edits · content territory
+Nine Stages of UAE Car Ownership
+A channel about cars runs out of cars. A channel about owning a car in the UAE never does — every driver here walks the same nine stages, the rules barely move, and the country adds new residents who have not walked any of them yet. Five stages already have data behind them. Four are wide open.
+
+data in hand
+thin
+nothing yet
+01
+Work out the budget
+covered
+rules.csv holds the Central Bank's lending limits: 80% loan-to-value, 60 months maximum, and total repayments capped at half your gross salary. Unchanged since 2011.
+
+“Twenty percent down isn't the dealer being difficult. It's the law.”
+Central Bank Regulation 29/2011 · already sourced
+02
+Choose the car
+thin where it matters
+361 rows across 51 brands — but only twenty start under AED 60,000, and that is exactly where “cheapest car in the UAE” and “best first car” live. The highest-intent searches on the channel are being answered from the thinnest part of the file.
+
+needs twenty more rows under AED 100,000. Cheaper to gather than anything else here, and worth more.
+
+03
+Buy it
+nothing yet
+The most Gulf-specific question there is, and it has no data behind it: GCC spec against an American or Japanese import. Cooling, warranty, resale, and whether the agency will touch it. Alongside it, the two checks every used buyer needs and few make — whether a bank still owns the car, and whether it has been written off before.
+
+“That imported one is AED 20,000 cheaper. Here's what you're actually giving up.”
+needs research → spec.csv
+04
+Register it
+covered
+AED 350 plus inspection at 170–200, so the real annual bill lands near 550–600. Miss the deadline and it is AED 500 a month — more than the registration itself.
+
+“Forgetting for three months costs more than a year of registration.”
+ownership.csv · already sourced
+
+05 Insure it
+your strongest ground
+63 sourced rows, and almost none of it is common knowledge: excess capped by car value from AED 350 to 1,400, written off once repairs pass 50% of value, parts depreciated to 30% by year six, a 10% loading if the driver is under 25.
+
+“Your insurer is not allowed to charge you more than this.”
+insurance.csv + rules.csv · already sourced
+
+06 Run it
+covered
+Salik at AED 6 peak, 4 off-peak, free between 1am and 6am — and no daily cap, which is the part that surprises people. Fuel is in there too, and by design those rows expire every month rather than quietly going wrong.
+
+“There is no daily Salik cap. Here's what your commute actually costs.”
+ownership.csv · already sourced
+
+07 Survive the summer
+nothing yet — best opening
+Fifty degrees does things to a car that no global review channel has any reason to explain. The RTA treats tyres over five years old as unfit whatever the tread looks like; batteries die here in a fraction of the time they last elsewhere; the tint limit is a legal number, not a preference.
+
+The climate does not change. Everything in this stage stays true for as long as the channel exists.
+
+“Your tyres are illegal at five years old. The tread has nothing to do with it.”
+needs research → heat.csv
+08
+Crash it, fix it
+one row in, the rest open
+Nobody searches this until the morning it happens, and then they search it urgently: the police report and why no garage will touch the car without one, agency repair against a back-street workshop, what the excess actually costs you.
+
+One piece is already sourced and is the strongest single fact in the whole file — the at-fault driver's insurer owes you AED 300 a day, up to fifteen days, while your car sits in the workshop. Almost nobody claims it.
+
+“Your insurer owes you 300 dirhams a day. Ask for it.”
+rules.csv has this one · the rest needs research
+09
+Sell it, or leave
+nothing yet — highest intent
+The most emotionally loaded search in the whole lane, and one that exists almost nowhere else in the world: you are leaving the country and the bank still owns your car. Clearance certificates, what an unpaid loan can do to your ability to travel, selling a car with finance still on it, export plates, transferring ownership.
+
+Every expat leaves eventually. This is a permanent audience that renews itself.
+
+“Leaving the UAE with a car loan.”
+needs research → exit.csv
+Where the market is actually moving
+Growing “side by side with vehicles in the UAE” means covering what is arriving, not what already has ten reviews. Your own file says where that is.
+
+15 brands in cars.csv that did not sell here five years ago
+Voyah, Jetour, Jaecoo, Omoda, Tank, Hongqi, Exeed, GAC, Changan, Dongfeng, BAIC, Chery, Geely, Haval, Zeekr
+60 electric rows already sourced cheapest at AED 74,900 — the price objection is gone and nobody has said so
+361 usable price rows, zero unresolved conflicts thin under AED 60,000, which is the half that converts
+If you do one thing next
+Stage 07. It needs the least research, it is the least contested lane in UAE car content, and unlike a price it never has to be revisited.
+
+Summer and heat — the tyre rule, battery life, tint. Permanent, and nobody owns it.
+Leaving the UAE — the highest-intent search in the lane, and a question the rest of the internet has no reason to answer.
+GCC spec versus imports — the question every used buyer in Sharjah is already asking.
+Twenty cheap cars — not a video, but it makes stage 02 work, and it is an afternoon.
+Each of the first three is one research pass into a new CSV, the same way rules.csv was built — official sources only, every row carrying a URL the pipeline will accept.
+
+Coverage counts are read from the live files: 361 rows in cars.csv, 23 in insurance.csv, 18 in ownership.csv, 40 in rules.csv. A stage marked open means the pipeline physically cannot build it yet — the citation whitelist blocks any figure that has no curated source behind it.

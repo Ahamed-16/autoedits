@@ -1,0 +1,21 @@
+# title:       Sheikh Zayed's Chrysler Is Back In Abu Dhabi
+# description: The car Sheikh Zayed was filmed driving in the documentary Farewell Arabia has been recreated for the new Zayed National Museum. A 1966 Chrysler Newport in Formal Black, sourced from California and rebuilt to match — flag mount, oversized desert wheels and all. It sits on sand, with tyre tracks laid behind it. All photographs shot by me at the museum, Saadiyat Cultural District. Sources: Gulf News, The National.
+# tags:        zayed national museum, sheikh zayed, chrysler newport, farewell arabia, abu dhabi, uae history, classic car uae, saadiyat, 1966 chrysler, uae founding father
+# kicker:      Abu Dhabi · Zayed National Museum
+# question:    Would you have picked a Chrysler?
+# seconds:     2.6
+# --------------------------------------------------------------------------
+# SOURCING NOTE — read before editing any caption.
+# The 1966 Chrysler Newport, Formal Black, California sourcing, flag mount and
+# oversized wheels are all confirmed by Gulf News, independently of the
+# Facebook post that first mentioned them.
+#   https://gulfnews.com/uae/inside-zayed-national-museum-6-must-visit-galleries-telling-the-uaes-story-1.500368120
+# The car on the floor is a RECREATION, not Sheikh Zayed's original. Say so.
+# The film's year is DISPUTED: Gulf News says 1968, IMDb and others say 1967.
+# So the film is named without a year anywhere in this short. Do not add one.
+# --------------------------------------------------------------------------
+~/Pictures/Car_Pictures/znm_01_exterior.jpg | The UAE's *national museum* just opened.
+~/Pictures/Car_Pictures/znm_02_atrium.jpg |
+~/Pictures/Car_Pictures/znm_03_horses.jpg | Before the roads, this was how you crossed it.
+~/Pictures/Car_Pictures/znm_04_chrysler_rear.jpg | Then the founding father crossed the dunes in *this*.
+~/Pictures/Car_Pictures/znm_05_chrysler_front.jpg | A *1966 Chrysler Newport* — rebuilt from film footage.

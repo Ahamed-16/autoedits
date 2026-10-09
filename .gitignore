@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------- secrets --
+# Never commit these. A pushed key stays in git history even if you delete
+# the file later, so it has to be rotated rather than removed.
+.env
+token.json
+client_secret.json
+
+# ------------------------------------------------------------- your voice --
+# Not credentials, but these are the reference recordings Chatterbox clones
+# you from. Anyone who has them can make your voice say anything.
+data/my_voice.wav
+data/Voice.m4a
+
+# ------------------------------------------------------- build output only --
+work/
+Claude outputs/
+*.mp4
+*.mp3
+
+# ---------------------------------------- large, or regenerated on demand --
+# NOTE: git has no inline comments in .gitignore. A trailing "# why" makes
+# the whole line a literal filename and the rule silently does nothing.
+# Keep every comment on its own line.
+#
+# autoedits.db  - rebuilt by db.init()
+# embeddings.npz - rebuilt by: python -m autoedits.embed
+# lmv_en.pdf    - 11.8MB, re-downloadable from licensing.rta.ae
+data/autoedits.db
+data/embeddings.npz
+data/lmv_en.pdf
+
+# ----------------------------------------------------------------- python --
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

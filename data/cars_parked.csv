@@ -1,0 +1,48 @@
+brand,model,year,segment,powertrain,price_from_aed,price_to_aed,source_url,checked_on,confidence,notes
+Bentley,Flying Spur,2026,Sedan,Petrol,145289,1400000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,CONFLICT,"Base figure of 145,289 is almost certainly a data error — verify"
+Bentley,Continental GT,2026,Coupe,Petrol,272600,840000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,CONFLICT,Base figure looks low for a Continental GT — verify before quoting
+Bentley,Bentayga,2026,Full Size SUV,Petrol,410000,1060000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,single-source,Price range spans trims
+Bentley,Continental GTC,2026,Convertible,Petrol,800000,1100000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,single-source,Price range spans trims
+BMW,X7,2026,Full Size SUV,Petrol,503213,579817,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,M3,2026,Sedan,Petrol,516130,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,8 Series Gran Coupe,2026,Coupe,Petrol,560000,620000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,8 Series Convertible,2026,Convertible,Petrol,575000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,M5,2026,Sedan,Petrol,599000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X5 M,2026,Large SUV,Petrol,599990,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X6 M,2026,Large SUV,Petrol,599990,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,i7,2026,Sedan,Electric,710000,750000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,M8,2026,Coupe,Petrol,720000,730000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,XM,2026,Large SUV,PHEV,830705,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+Cadillac,Escalade IQ,2026,Full Size SUV,Electric,586000,650000,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,Escalade-V,2026,Full Size SUV,Petrol,663700,,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,
+Ferrari,Roma Spider,2026,Convertible,Petrol,955500,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,296 GTB,2026,Coupe,PHEV,1200000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,296 GTS,2026,Convertible,PHEV,1260000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,Amalfi,2026,Coupe,Petrol,1290000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,Purosangue,2026,Large SUV,Petrol,1500000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,12Cilindri,2026,Coupe,Petrol,1600000,1710000,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,Price range spans trims
+GMC,Hummer EV,2026,Full Size SUV,Electric,519000,,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,
+Jaguar,F-Type,2026,Coupe,Petrol,297570,,https://www.zigwheels.ae/new-cars/jaguar,2026-09-06,CONFLICT,Source lists a top figure of AED 2.98M which looks like a data error; only the base is recorded
+Lamborghini,Urus,2026,Large SUV,Petrol,900000,1550000,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,Price range spans trims
+Lamborghini,Temerario,2026,Coupe,PHEV,1030000,,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,
+Lamborghini,Huracan,2026,Coupe,Petrol,1050000,1140000,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,Price range spans trims
+Lamborghini,Revuelto,2026,Coupe,PHEV,2620000,,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,
+Lexus,LX 700h,2026,Large SUV,Hybrid,590000,680000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Maserati,Grecale,2026,Midsize SUV,Petrol,309000,479000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,Levante,2026,Large SUV,Petrol,429000,435000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,GranTurismo,2026,Coupe,Petrol,689000,819000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,GranCabrio,2026,Convertible,Petrol,800000,949900,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,MC20,2026,Coupe,Petrol,999000,1150000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,GT2 Stradale,2026,Coupe,Petrol,1080000,1120000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,GLS-Class,2026,Full Size SUV,Petrol,547900,908900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,AMG GT 4-Door,2026,Coupe,Petrol,559900,1030000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,EQS SUV,2026,Full Size SUV,Electric,580900,652900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,S-Class,2026,Sedan,Petrol,670900,754900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,AMG SL,2026,Convertible,Petrol,674900,1040000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,EQS,2026,Sedan,Electric,723900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,G-Class,2026,Full Size SUV,Petrol,759900,1050000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,Maybach S-Class,2026,Sedan,Petrol,828900,1110000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,Maybach EQS SUV,2026,Full Size SUV,Electric,831900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,AMG GT,2026,Coupe,Petrol,901900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,Maybach GLS,2026,Full Size SUV,Petrol,977900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Porsche,911,2026,Coupe,Petrol,518600,1040000,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims

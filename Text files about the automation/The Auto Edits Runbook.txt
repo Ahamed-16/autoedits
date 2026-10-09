@@ -1,0 +1,129 @@
+The Auto Edits · operating manual
+Auto Edits Runbook
+Every command, grouped by how often you actually run it. The machine writes, voices and renders on its own overnight — the only thing that needs you is deciding what ships.
+
+Start here, always
+cd ~/autoedits && source .venv/bin/activate
+Copy
+Nothing below works without it. The prompt gains a (.venv) prefix.
+Daily
+Drafts were built at 3am. This is the five minutes that decides which of them exist.
+
+~5 min · morning
+1
+streamlit run review_app.py
+Copy
+Opens in your browser. Watch each draft, check the sourced numbers listed under the video, sharpen the hook if it's flat, then Approve or Reject. Approving does not upload anything.
+
+2
+python -m autoedits.publish
+Copy
+Ships everything you approved and prints the YouTube link for each. The “Upload now” button in the review app's Approved tab does exactly the same thing — use whichever is in front of you.
+
+Weekly
+Pick one day and keep it. The first command is the one that stops the channel silently going dark.
+
+~10 min · pick a day
+1
+python -m autoedits.publish --check
+Copy
+Confirms YouTube is still connected and names your channel back to you. Do not skip this one. While the Google project sits in Testing mode the login expires after seven days, and the failure is invisible — uploads just stop and approved videos pile up looking fine.
+
+2
+python -m autoedits.publish --metrics
+Copy
+Pulls views, likes and comments back into the Performance tab. This is the loop that compounds — after twenty videos you can sort your own hooks by like rate and write the next batch from evidence.
+
+3
+python -m autoedits.cars
+Copy
+Data health in one screen: how many rows are usable, what has gone stale, and which prices are flagged CONFLICT and being withheld from the writer.
+
+4
+python -m autoedits.topics
+Copy
+Optional — cron already runs this on Mondays. Loads the evergreen list first, then harvests autocomplete. Takes a few minutes because it is deliberately polite to Google's endpoint.
+
+Already automatic
+These run themselves. Running them by hand only duplicates work.
+
+cron · no action
+03:00 nightly
+autoedits.pipeline — writes, voices and renders three drafts into the review queue.
+04:00 Mondays
+autoedits.topics — refills the topic queue.
+Never automatic
+Uploading. The machine builds; you decide what ships. That is the whole design.
+·
+crontab -l                    # confirm the schedule
+tail -f ~/autoedits/cron.log  # watch last night's run
+Copy
+The machine has to be awake at 3am. Locking the screen is fine; suspending or powering off is not.
+
+After you edit a file
+Only one edit needs a command afterwards. The rest are picked up on the next run.
+
+as needed
+·
+python -m autoedits.topics --evergreen
+Copy
+Run after editing data/evergreen_topics.txt. No network, no waiting. The file is in priority order, so reordering it reorders the channel — this is the command that applies that.
+
+·
+python -m autoedits.pipeline
+Copy
+Builds drafts right now instead of waiting for 3am. Roughly 20 minutes per draft on this machine, most of it the voice.
+
+·
+Edited any data/*.csv, or the seeds and exclusions in config.yaml? Nothing to run — tonight's build reads them fresh.
+
+When something breaks
+Each of these skips the slow parts, so none of them cost you fifteen minutes to find out.
+
+diagnostics
+·
+python -m autoedits.doctor
+Copy
+Start here. Checks ffmpeg, fonts, packages, the writer, the voice and the YouTube credentials, and names the blockers.
+
+·
+python -m autoedits.cars "black points in uae"
+Copy
+Shows exactly what the writer will be handed for that topic. If this prints nothing, no script for it can ever be built — the data is missing, not the model.
+
+·
+python -m autoedits.script "black points in uae"
+Copy
+Writes a full script and renders nothing. Five to eight minutes, and it prints which figures came back unsourced.
+
+·
+python -m autoedits.pipeline --rebuild <slug>
+Copy
+Render failed after the voice was already made? This reuses the audio instead of spending another quarter of an hour on it. Run it with no slug to list what is available.
+
+·
+python -m autoedits.topics --probe     # search endpoint alive?
+python -m autoedits.voice              # 20-second voice test
+Copy
+Two seconds and twenty seconds respectively.
+
+·
+python -m autoedits.publish --auth
+Copy
+YouTube connection dead. Opens a browser and re-authorises from scratch. Approved videos stay approved and go out on the next upload.
+
+What expires, and when
+The pipeline withholds a figure once it is past its shelf life rather than publishing it and hoping.
+
+reference
+Stale rows are silently withheld from the writer — a topic that suddenly stops producing drafts usually means its data timed out, not that anything is broken.
+What	Lives in	Shelf life
+YouTube login	token.json	7 days
+Fuel prices	data/ownership.csv	31 days
+Car prices	data/cars.csv	90 days
+Insurance tariff	data/insurance.csv	90 days
+Law and regulation	data/rules.csv	730 days
+The seven-day trap
+Everything else on this page degrades loudly. The YouTube login does not — it dies quietly and the queue just stops moving. Publishing the Google Cloud app out of Testing mode removes the seven-day clock permanently; until then, the weekly --check is the whole safety net.
+
+Everything lives in ~/autoedits. Nothing publishes without you approving it first.

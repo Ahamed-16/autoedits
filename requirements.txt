@@ -1,0 +1,30 @@
+# --- core (always needed) ---
+Pillow>=10.0
+requests>=2.31
+PyYAML>=6.0
+python-dotenv>=1.0
+
+# Chatterbox's watermarker (resemble-perth) imports pkg_resources, which
+# setuptools REMOVED after v81 — and Python 3.12 venvs no longer ship
+# setuptools at all. Without this pin Chatterbox dies with the useless
+# "'NoneType' object is not callable". See TROUBLESHOOTING.md.
+setuptools<82
+
+# --- review interface ---
+streamlit>=1.35
+
+# --- YouTube upload ---
+google-api-python-client>=2.120
+google-auth-oauthlib>=1.2
+google-auth-httplib2>=0.2
+
+# --- voice ---
+# kokoro: free, Apache-2.0, ~real-time on CPU. Use while debugging.
+#   also needs: sudo apt install espeak-ng
+kokoro>=0.9
+soundfile>=0.12
+
+# chatterbox: free, MIT, clones your voice. ~14x slower than real time on a
+# CPU-only box, which is fine for a 3am cron and painful for iteration.
+chatterbox-tts
+torchaudio

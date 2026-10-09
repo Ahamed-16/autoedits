@@ -1,0 +1,20 @@
+# title:       The Dubai Cafe Where The Cars Are The Furniture
+# description: Flat12 on a January night. A warehouse with string lights, a
+#   coffee counter down one side, and a floor full of cars instead of tables.
+#   All photographs shot by me.
+# tags:        flat12, flat12 cafe dubai, dubai car cafe, car culture dubai,
+#   uae car meet, classic cars dubai, porsche 911, dubai at night
+# kicker:      Dubai · January
+# question:    Which one are you having coffee next to?
+# seconds:     4.2
+# --------------------------------------------------------------------------
+# THREE FRAMES ONLY. That is 13 seconds at this pacing — thin for a Short.
+# If more photos exist from this night, add them before building.
+#
+# CAPTIONS: name only what you are certain of. I can see an impact-bumper
+# 911, a classic Mercedes coupe and a dark red mid-engined Ferrari, but I am
+# not naming generations or models I cannot read a badge on. You were there.
+# --------------------------------------------------------------------------
+~/Pictures/Car_Pictures/IMG-20260124-WA0013_hi.jpg | A *car park* with a coffee counter.
+~/Pictures/Car_Pictures/IMG-20260124-WA0005_hi.jpg |
+~/Pictures/Car_Pictures/IMG-20260124-WA0011_hi.jpg |

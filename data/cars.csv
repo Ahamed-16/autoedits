@@ -1,0 +1,466 @@
+brand,model,year,segment,powertrain,price_from_aed,price_to_aed,source_url,checked_on,confidence,notes
+Audi,Q6 e-tron,2026,SUV,Electric,299900,,https://www.yallamotor.com/news/car-prices-uae-2026-complete-guide-50-models-all-segments-55306,2026-09-05,single-source,
+BAIC,U5 Plus,2026,Sedan,Petrol,51975,58800,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,X55,2026,Compact SUV,Petrol,56000,101850,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,X35,2026,Compact SUV,Petrol,62000,68200,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,X7,2026,Midsize SUV,Petrol,67876,110000,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,BJ30,2026,Compact SUV,Petrol,98700,119700,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,BJ40-C,2026,Midsize SUV,Petrol,108750,175000,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,F40,2026,Midsize SUV,Petrol,116000,,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,
+BAIC,BJ40 Pro,2026,Midsize SUV,Petrol,125000,133750,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,BJ40 SE,2026,Midsize SUV,Petrol,132300,137000,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,BJ60,2026,Large SUV,Petrol,172200,199900,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+BAIC,BJ80,2026,Large SUV,Petrol,201186,255000,https://www.zigwheels.ae/new-cars/baic,2026-09-06,single-source,Price range spans trims
+Bentley,Flying Spur,2026,Sedan,Petrol,145289,1400000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,CONFLICT,"Base figure of 145,289 is almost certainly a data error — verify"
+Bentley,Continental GT,2026,Coupe,Petrol,272600,840000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,CONFLICT,Base figure looks low for a Continental GT — verify before quoting
+Bentley,Bentayga,2026,Full Size SUV,Petrol,410000,1060000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,single-source,Price range spans trims
+Bentley,Continental GTC,2026,Convertible,Petrol,800000,1100000,https://www.zigwheels.ae/new-cars/bentley,2026-09-06,single-source,Price range spans trims
+BMW,1 Series,2026,Hatchback,Petrol,175000,200000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,2 Series Gran Coupe,2026,Coupe,Petrol,177000,202716,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,X1,2026,Compact SUV,Petrol,189000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,3 Series,2026,Sedan,Petrol,245000,315000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,Z4,2026,Convertible,Petrol,250500,320000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,2 Series Coupe,2026,Coupe,Petrol,255000,295000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,4 Series Coupe,2026,Coupe,Petrol,255000,317000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,4 Series Gran Coupe,2026,Coupe,Petrol,265677,345358,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,4 Series Convertible,2026,Convertible,Petrol,280000,310000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,X3,2026,Midsize SUV,Petrol,289720,345000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,i4,2026,Sedan,Electric,299734,385961,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,5 Series,2026,Sedan,Petrol,310757,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X6,2026,Large SUV,Petrol,318000,514000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,i5,2026,Sedan,Electric,383257,458857,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,iX,2026,Large SUV,Electric,390000,585000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,M2,2026,Coupe,Petrol,419959,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X5,2026,Large SUV,Petrol,427000,470000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,X3 M,2026,Midsize SUV,Petrol,460000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,7 Series,2026,Sedan,Petrol,460000,680000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,M4,2026,Coupe,Petrol,475000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,8 Series Coupe,2026,Coupe,Petrol,485000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X4 M,2026,Midsize SUV,Petrol,496091,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X7,2026,Full Size SUV,Petrol,503213,579817,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,M3,2026,Sedan,Petrol,516130,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,8 Series Gran Coupe,2026,Coupe,Petrol,560000,620000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,8 Series Convertible,2026,Convertible,Petrol,575000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,M5,2026,Sedan,Petrol,599000,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X5 M,2026,Large SUV,Petrol,599990,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,X6 M,2026,Large SUV,Petrol,599990,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BMW,i7,2026,Sedan,Electric,710000,750000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,M8,2026,Coupe,Petrol,720000,730000,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,Price range spans trims
+BMW,XM,2026,Large SUV,PHEV,830705,,https://www.zigwheels.ae/new-cars/bmw,2026-09-06,single-source,
+BYD,Qin Plus EV,2026,Sedan,Electric,74900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+BYD,Sealion 5,2026,Midsize SUV,PHEV,89900,,https://www.byduae.ae/en/new-cars/sealion5/,2026-10-07,single-source,"BYD brands it Super Hybrid; site renders prices as bare digits, dirham symbol is an image"
+BYD,Seal 6,2027,Sedan,PHEV,92900,,https://www.byduae.ae/en/new-cars/seal6/,2026-10-07,single-source,Super Hybrid
+BYD,Atto 3,2026,SUV,Electric,109900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+BYD,Sealion 6,2026,SUV,PHEV,109900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+BYD,Seal 7,2027,Sedan,PHEV,135900,,https://www.byduae.ae/en/new-cars/byd-seal7/,2026-10-07,single-source,"was 109,900 from an aggregator; official site says 135,900. Super Hybrid"
+BYD,Song Plus,2027,Midsize SUV,PHEV,150900,,https://www.byduae.ae/en/new-cars/byd-song-plus/,2026-10-07,single-source,"was 119,900 from an aggregator; official site says 150,900. Super Hybrid"
+BYD,Seal,2026,Sedan,Electric,154900,,https://www.byduae.ae/en/new-cars/byd-seal/,2026-10-07,single-source,"was 149,900 from an aggregator; official site says 154,900."
+BYD,Ti 7,2027,Midsize SUV,PHEV,157900,,https://www.byduae.ae/en/new-cars/ti-7/,2026-10-07,single-source,Super Hybrid
+BYD,Atto 8,2027,Large SUV,PHEV,166900,,https://www.byduae.ae/en/new-cars/atto8/,2026-10-07,single-source,"Super Hybrid, 7 seats"
+BYD,Shark 6,2027,Pickup,PHEV,167900,,https://www.byduae.ae/en/new-cars/shark6/,2026-10-07,single-source,Super Hybrid DMO platform
+BYD,Sealion 7,2026,Midsize SUV,Electric,178900,192900,https://www.byduae.ae/en/new-cars/byd-sealion7/,2026-10-07,single-source,"hero says 178,900 but the page FAQ says Premium starts 172,900 / Performance 192,900 - BYD's own page disagrees with itself"
+BYD,Tang,2026,SUV,Electric,209900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+BYD,Han,2026,Sedan,Electric,231900,,https://www.byduae.ae/en/new-cars/byd-han/,2026-10-07,single-source,"was 189,900 from an aggregator; official site says 231,900."
+Cadillac,XT4,2026,Compact SUV,Petrol,194500,,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,
+Cadillac,XT5,2026,Midsize SUV,Petrol,209400,227200,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,CT5,2026,Sedan,Petrol,220300,224000,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,Optiq,2026,Midsize SUV,Electric,235000,,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,
+Cadillac,XT6,2026,Large SUV,Petrol,255600,262500,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,CT5-V,2026,Sedan,Petrol,288300,418400,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,Lyriq,2026,Large SUV,Electric,325000,330000,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,Escalade,2026,Full Size SUV,Petrol,470400,539200,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,Escalade IQ,2026,Full Size SUV,Electric,586000,650000,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,Price range spans trims
+Cadillac,Escalade-V,2026,Full Size SUV,Petrol,663700,,https://www.zigwheels.ae/new-cars/cadillac,2026-09-06,single-source,
+Changan,Alsvin,2026,Sedan,Petrol,43900,,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,
+Changan,CS35 Plus,2026,Compact SUV,Petrol,62900,75000,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,Price range spans trims
+Changan,Eado Plus,2026,Sedan,Petrol,64000,84500,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,Price range spans trims
+Changan,UNI-T,2026,Midsize SUV,Petrol,105000,150000,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,Price range spans trims
+Changan,CS75 Plus,2026,Midsize SUV,Petrol,116000,,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,
+Changan,UNI-V,2026,Sedan,Petrol,125000,,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,
+Changan,CS95,2026,Large SUV,Petrol,130000,,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,
+Changan,UNI-K,2026,Large SUV,Petrol,141750,,https://www.zigwheels.ae/new-cars/changan,2026-09-06,single-source,
+Chery,Arrizo 5,2026,Sedan,Petrol,35795,38000,https://carswitch.com/uae/new-cars/chery,2026-09-06,single-source,Price range spans trims
+Chery,Tiggo 4 Pro,2026,Compact SUV,Petrol,60000,78000,https://carswitch.com/uae/new-cars/chery,2026-09-06,single-source,Price range spans trims
+Chery,Tiggo 4,2026,Compact SUV,Petrol,69900,,https://www.cheryuae.com/en/models/tiggo-4,2026-10-07,single-source,1.5L CVT 117hp; no VAT footnote on site
+Chery,Tiggo 7 Champion,2026,Midsize SUV,Petrol,75500,,https://www.cheryuae.com/,2026-10-07,single-source,1.5T 154hp
+Chery,Tiggo 7,2026,Midsize SUV,Petrol,94900,,https://www.cheryuae.com/,2026-10-07,single-source,"was 68,900 from an aggregator; official site says 94,900. 1.5T 6DCT 154hp"
+Chery,Tiggo 8,2026,Large SUV,Petrol,94900,,https://www.cheryuae.com/en/models/tiggo-8,2026-10-07,single-source,"was 98,500 from an aggregator; official site says 94,900. 7 seats. Chery's own page contradicts itself: card says 2.0T 254hp, spec table says 1.6T 197hp"
+Chery,Tiggo 7 Super Hybrid,2026,Midsize SUV,Hybrid,104500,,https://www.cheryuae.com/en/models/tiggo-7,2026-10-07,single-source,
+Chery,Tiggo 9 Super Hybrid,2026,Large SUV,Hybrid,134900,,https://www.cheryuae.com/,2026-10-07,single-source,cheaper than the petrol Tiggo 9 on Chery's own pricing
+Chery,Arrizo 8,2026,Sedan,Petrol,135000,,https://carswitch.com/uae/new-cars/chery,2026-09-06,single-source,
+Chery,Tiggo 9,2026,Large SUV,Petrol,142900,,https://www.cheryuae.com/,2026-10-07,single-source,"was 120,000 from an aggregator; official site says 142,900. 2.0T 254hp"
+Chevrolet,Groove,2026,Compact SUV,Petrol,64000,74000,https://www.chevroletarabia.com/ae-en/crossovers-and-suvs/groove,2026-10-07,cross-checked,"1.5T 145hp CVT. Groove's masthead renders an unfilled 'AED XXXX' placeholder; these come from the trim table. Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Captiva,2026,Compact SUV,Petrol,75700,87100,https://www.chevroletarabia.com/ae-en/crossovers-and-suvs/captiva,2026-10-07,cross-checked,"7 seats, 1.5T 144hp CVT. Captiva's headline figure is a MONTHLY instalment (AED 1,299/mo) - these are the trim cash prices. Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Spark EUV,2026,Compact SUV,Electric,79900,,https://www.zigwheels.ae/new-cars/chevrolet,2026-09-06,single-source,
+Chevrolet,Captiva PHEV,2026,Compact SUV,PHEV,104900,,https://www.chevroletarabia.com/ae-en,2026-10-07,cross-checked,"1.5L PHEV 201hp. Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Captiva EV,2026,Compact SUV,Electric,109900,,https://www.chevroletarabia.com/ae-en,2026-10-07,cross-checked,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Silverado LD,2026,Pickup,Petrol,162700,260400,https://www.chevroletarabia.com/ae-en/trucks-and-vans/silverado-ld,2026-10-07,single-source,"2.7T / 5.3 V8 / 6.2 V8. Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Equinox EV,2026,Midsize SUV,Electric,169900,,https://www.chevroletarabia.com/ae-en/crossovers-and-suvs/groove,2026-10-07,cross-checked,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Traverse,2026,Large SUV,Petrol,173400,,https://www.chevroletarabia.com/ae-en,2026-10-07,cross-checked,"2.5T 328hp, 7 seats. Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Silverado,2026,Pickup,Petrol,174300,260400,https://www.zigwheels.ae/new-cars/chevrolet,2026-09-06,single-source,Price range spans trims
+Chevrolet,Silverado HD,2026,Pickup,Petrol,197800,,https://www.chevroletarabia.com/ae-en/trucks-and-vans/silverado-ld,2026-10-07,single-source,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Tahoe,2026,Full Size SUV,Petrol,231600,313500,https://www.chevroletarabia.com/ae-en/crossovers-and-suvs/tahoe,2026-10-07,cross-checked,"5.3 V8 355hp / 6.2 V8 420hp, 10AT. Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Suburban,2026,Full Size SUV,Petrol,242000,,https://www.chevroletarabia.com/ae-en/crossovers-and-suvs/tahoe,2026-10-07,cross-checked,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Corvette,2026,Coupe,Petrol,352400,423200,https://www.zigwheels.ae/new-cars/chevrolet,2026-09-06,single-source,Price range spans trims
+Chevrolet,Corvette Stingray,2026,Coupe,Petrol,352400,,https://www.chevroletarabia.com/ae-en,2026-10-07,single-source,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Corvette Z06,2026,Coupe,Petrol,646700,,https://www.chevroletarabia.com/ae-en,2026-10-07,single-source,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Chevrolet,Corvette ZR1,2026,Coupe,Petrol,871000,,https://www.chevroletarabia.com/ae-en,2026-10-07,single-source,"Chevrolet's price footnote marker resolves to an empty disclaimer, so VAT treatment is unstated"
+Dodge,Charger,2026,Sedan,Petrol,174900,389900,https://www.zigwheels.ae/new-cars/dodge,2026-09-06,single-source,Price range spans trims
+Dodge,Durango,2026,Large SUV,Petrol,199900,399900,https://www.zigwheels.ae/new-cars/dodge,2026-09-06,single-source,Price range spans trims
+Dodge,Challenger,2026,Coupe,Petrol,219900,292900,https://www.zigwheels.ae/new-cars/dodge,2026-09-06,single-source,Price range spans trims
+Dongfeng,Shine,2026,Sedan,Petrol,53900,67900,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,Price range spans trims
+Dongfeng,Rich 7,2026,Pickup,Petrol,63500,130000,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,Price range spans trims
+Dongfeng,Shine Max,2026,Sedan,Petrol,69900,79900,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,Price range spans trims
+Dongfeng,AX7,2026,Midsize SUV,Petrol,74900,79900,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,Price range spans trims
+Dongfeng,Z9,2026,Pickup,Petrol,80740,,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,
+Dongfeng,Mage,2026,Midsize SUV,Petrol,89900,96900,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,Price range spans trims
+Dongfeng,Huge,2026,Midsize SUV,Petrol,96000,99900,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,Price range spans trims
+Dongfeng,007,2026,Sedan,Electric,109900,,https://www.zigwheels.ae/new-cars/dongfeng,2026-09-06,single-source,
+Exeed,LX,2026,Compact SUV,Petrol,84999,89999,https://www.zigwheels.ae/new-cars/exeed,2026-09-06,single-source,Price range spans trims
+Exeed,TXL,2026,Midsize SUV,Petrol,99999,120000,https://www.zigwheels.ae/new-cars/exeed,2026-09-06,single-source,Price range spans trims
+Exeed,RX,2026,Large SUV,Petrol,125999,149999,https://www.zigwheels.ae/new-cars/exeed,2026-09-06,single-source,Price range spans trims
+Exeed,VX,2026,Large SUV,Petrol,139999,150000,https://www.zigwheels.ae/new-cars/exeed,2026-09-06,single-source,Price range spans trims
+Exeed,ES,2026,Sedan,PHEV,149999,219999,https://www.zigwheels.ae/new-cars/exeed,2026-09-06,single-source,Price range spans trims
+Exeed,ET,2026,Large SUV,PHEV,179999,229999,https://www.zigwheels.ae/new-cars/exeed,2026-09-06,single-source,Price range spans trims
+Ferrari,Roma Spider,2026,Convertible,Petrol,955500,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,296 GTB,2026,Coupe,PHEV,1200000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,296 GTS,2026,Convertible,PHEV,1260000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,Amalfi,2026,Coupe,Petrol,1290000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,Purosangue,2026,Large SUV,Petrol,1500000,,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,
+Ferrari,12Cilindri,2026,Coupe,Petrol,1600000,1710000,https://www.zigwheels.ae/new-cars/ferrari,2026-09-06,single-source,Price range spans trims
+Ford,Figo,2026,Hatchback,Petrol,60900,,https://carswitch.com/uae/new-cars/ford,2026-09-06,single-source,
+Ford,Escort,2026,Sedan,Petrol,63000,,https://carswitch.com/uae/new-cars/ford,2026-09-06,single-source,
+Ford,EcoSport,2026,Compact SUV,Petrol,67000,80000,https://carswitch.com/uae/new-cars/ford,2026-09-06,single-source,Price range spans trims
+Ford,Escape,2026,Compact SUV,Petrol,101745,,https://carswitch.com/uae/new-cars/ford,2026-09-06,single-source,
+Ford,Territory,2026,Compact SUV,Petrol,115395,,https://www.altayermotors.com/ford/new-models/all-new-ford-territory/,2026-10-07,single-source,"was 105,500 from an aggregator; official site says 115,395. 1.8L EcoBoost 186hp 7DCT; lineup page advertises a Territory Hybrid but the model page shows no hybrid variant; price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Ranger,2026,Pickup,Petrol,141645,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 138,495 from an aggregator; official site says 141,645. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Taurus,2026,Sedan,Petrol,146895,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 110,000 from an aggregator; official site says 146,895. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Transit Van,2026,Van,Petrol,154245,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,price incl VAT (Ford/Al Tayer); no registration or insurance note
+Ford,Everest,2026,Midsize SUV,Petrol,160545,,https://www.altayermotors.com/ford/new-models/everest/,2026-10-07,cross-checked,"2.3L EcoBoost 296hp, 10AT, 4WD, 7 seats; price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Edge,2026,Midsize SUV,Petrol,169000,255000,https://carswitch.com/uae/new-cars/ford,2026-09-06,single-source,Price range spans trims
+Ford,F-150,2026,Pickup,Petrol,189945,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 183,500 from an aggregator; official site says 189,945. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Bronco,2026,Midsize SUV,Petrol,206745,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 175,000 from an aggregator; official site says 206,745. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Explorer,2026,Large SUV,Petrol,215145,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 205,695 from an aggregator; official site says 215,145. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Mustang,2026,Coupe,Petrol,225645,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 219,500 from an aggregator; official site says 225,645. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Ranger Raptor,2026,Pickup,Petrol,268695,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,price incl VAT (Ford/Al Tayer); no registration or insurance note
+Ford,Expedition,2026,Full Size SUV,Petrol,287595,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,"was 268,000 from an aggregator; official site says 287,595. price incl VAT (Ford/Al Tayer); no registration or insurance note"
+Ford,Bronco Raptor,2026,Midsize SUV,Petrol,419895,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,price incl VAT (Ford/Al Tayer); no registration or insurance note
+Ford,Raptor R,2026,Pickup,Petrol,561645,,https://www.altayermotors.com/ford/new-models/,2026-10-07,single-source,price incl VAT (Ford/Al Tayer); no registration or insurance note
+GAC,Empow,2026,Sedan,Petrol,65665,122900,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,Price range spans trims
+GAC,GS3 Emzoom,2026,Compact SUV,Petrol,67900,79900,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,Price range spans trims
+GAC,Emkoo,2026,Midsize SUV,Petrol,79900,89900,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,Price range spans trims
+GAC,Aion ES,2026,Sedan,Electric,79900,,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,
+GAC,GS4 Max,2026,Midsize SUV,Petrol,99900,,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,
+GAC,Aion V,2026,Midsize SUV,Electric,134900,,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,
+GAC,GS8,2026,Large SUV,Petrol,158900,169900,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,Price range spans trims
+GAC,M8,2026,MPV,Petrol,175000,,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,
+GAC,Hyptec HT,2026,Midsize SUV,Electric,177900,197900,https://www.zigwheels.ae/new-cars/gac,2026-09-06,single-source,Price range spans trims
+Geely,GX3 Pro,2026,Compact SUV,Petrol,57000,,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,
+Geely,Emgrand,2026,Sedan,Petrol,58000,69000,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Coolray,2026,Compact SUV,Petrol,75500,89900,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Cityray,2026,Compact SUV,Petrol,86500,97900,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Preface,2026,Sedan,Petrol,88000,98000,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,EX5,2026,Midsize SUV,Electric,89900,120000,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Okavango,2026,Midsize SUV,Petrol,99000,110000,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Starray,2026,Midsize SUV,Petrol,101000,119900,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Monjaro,2026,Large SUV,Petrol,124000,136000,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Geely,Geometry C,2026,Compact SUV,Electric,132000,157000,https://www.zigwheels.ae/new-cars/geely,2026-09-06,single-source,Price range spans trims
+Genesis,G70,2026,Sedan,Petrol,170000,225000,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,Price range spans trims
+Genesis,G80,2026,Sedan,Petrol,219900,224900,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,Price range spans trims
+Genesis,GV60,2026,Midsize SUV,Electric,309500,,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,
+Genesis,GV80,2026,Large SUV,Petrol,349900,355000,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,Price range spans trims
+Genesis,GV80 Coupe,2026,Coupe,Petrol,349900,395900,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,Price range spans trims
+Genesis,Electrified GV70,2026,Midsize SUV,Electric,375000,,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,
+Genesis,G90,2026,Sedan,Petrol,379900,464738,https://www.zigwheels.ae/new-cars/genesis,2026-09-06,single-source,Price range spans trims
+GMC,Terrain,2026,Midsize SUV,Petrol,115000,157000,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,Price range spans trims
+GMC,Acadia,2026,Large SUV,Petrol,143400,232000,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,Price range spans trims
+GMC,Sierra,2026,Pickup,Petrol,167400,303900,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,Price range spans trims
+GMC,Canyon,2026,Pickup,Petrol,201200,,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,
+GMC,Yukon XL,2026,Full Size SUV,Petrol,245000,318380,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,Price range spans trims
+GMC,Yukon,2026,Full Size SUV,Petrol,252100,357800,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,Price range spans trims
+GMC,Hummer EV,2026,Full Size SUV,Electric,519000,,https://www.zigwheels.ae/new-cars/gmc,2026-09-06,single-source,
+Haval,Jolion Pro,2026,Compact SUV,Petrol,69900,79900,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,Price range spans trims
+Haval,H6,2026,Midsize SUV,Petrol,69900,,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,
+Haval,H6 Hybrid,2026,Midsize SUV,Hybrid,79900,111900,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,Price range spans trims
+Haval,H6 GT,2026,Midsize SUV,Petrol,89900,,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,
+Haval,H7,2026,Midsize SUV,Petrol,99900,,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,
+Haval,V7,2026,Midsize SUV,Petrol,109900,119900,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,Price range spans trims
+Haval,H9,2026,Large SUV,Petrol,119900,,https://www.zigwheels.ae/new-cars/haval,2026-09-06,single-source,
+Honda,City,2026,Sedan,Petrol,72900,,https://honda-mideast.com/en-ae/automobiles/cars/new-city,2026-10-06,single-source,"was 67,900 from zigwheels; Honda prices it 72,900 on 2026-10-06. LX Sport, single trim; price incl VAT, excl registration & insurance (Honda)"
+Honda,HR-V,2026,Compact SUV,Petrol,85900,109900,https://honda-mideast.com/en-ae/automobiles/crossover-suv/Hrv-new,2026-10-06,single-source,"DX 85,900 / LX 95,900 / Sport 109,900; price incl VAT, excl registration & insurance (Honda)"
+Honda,Civic,2026,Sedan,Petrol,99900,129900,https://honda-mideast.com/en-ae/automobiles/cars/Civic-MMC,2026-10-06,single-source,"was 98,900 from zigwheels; Honda prices it 99,900 on 2026-10-06. LX 99,900 / Sport 129,900; price incl VAT, excl registration & insurance (Honda)"
+Honda,Accord 1.5L,2026,Sedan,Petrol,114900,139900,https://honda-mideast.com/en-ae/automobiles/cars/New-Accord-1-5L,2026-10-06,cross-checked,"LX 114,900 / EX 124,900 / EX-L 139,900; Honda labels it 'Accord 1.5L 2024'; price incl VAT, excl registration & insurance (Honda)"
+Honda,CR-V,2026,Midsize SUV,Petrol,119900,157900,https://honda-mideast.com/en-ae/automobiles/crossover-suv/All-New-CR-V,2026-10-06,single-source,"was 135,900 from zigwheels; Honda prices it 119,900 on 2026-10-06. LX 2WD 119,900 / EX AWD 142,900 / Touring AWD 157,900; 7 seats; price incl VAT, excl registration & insurance (Honda)"
+Honda,ZR-V,2026,Compact SUV,Petrol,119900,129900,https://honda-mideast.com/en-ae/automobiles/crossover-suv/ZR-V,2026-10-06,single-source,"LX 119,900 / EX 129,900; Apex Edition unpriced; same base price as CR-V; price incl VAT, excl registration & insurance (Honda)"
+Honda,Accord e:HEV,2026,Sedan,Hybrid,155900,165900,https://honda-mideast.com/en-ae/automobiles/cars/New-Accord-eHEV,2026-10-06,single-source,"e:HEV Sport 155,900 / e:HEV EX-L 165,900; 204hp combined; price incl VAT, excl registration & insurance (Honda)"
+Honda,Odyssey,2026,Minivan,Petrol,180900,223900,https://honda-mideast.com/en-ae/automobiles/minivan/Odyssey-New,2026-10-06,single-source,"LX 180,900 / EX-L 195,900 / Touring 223,900; VAT footnote absent on this page"
+Honda,Civic Type R,2026,Hatchback,Petrol,204999,,https://honda-mideast.com/en-ae/automobiles/cars/Civic-TypeR,2026-10-06,single-source,"2.0L VTEC Turbo 315hp, single trim; price incl VAT, excl registration & insurance (Honda)"
+Hongqi,H5,2026,Sedan,Petrol,81900,91900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,HS3,2026,Compact SUV,Petrol,99900,122900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,Ousado,2026,Sedan,Petrol,112900,123900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,HS5,2026,Midsize SUV,Petrol,119900,149900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,H6,2026,Sedan,Petrol,129900,149900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,HS7,2026,Large SUV,Petrol,169900,189900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,H9,2026,Sedan,Petrol,214900,229900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hongqi,E-HS9,2026,Full Size SUV,Electric,322900,415900,https://www.zigwheels.ae/new-cars/hongqi,2026-09-06,single-source,Price range spans trims
+Hyundai,Venue,2026,Compact SUV,Petrol,50000,,https://www.yallamotor.com/news/car-prices-uae-2026-complete-guide-50-models-all-segments-55306,2026-09-05,single-source,Lowest-priced SUV found. Worth verifying
+Hyundai,Accent,2026,Sedan,Petrol,73999,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Elantra,2026,Sedan,Petrol,75000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Tucson,2026,Midsize SUV,Petrol,104500,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Sonata,2026,Sedan,Petrol,109900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Santa Fe,2026,Large SUV,Petrol,149900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Ioniq 6,2026,Sedan,Electric,185000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Ioniq 5,2026,SUV,Electric,189900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Hyundai,Palisade,2026,Large SUV,Petrol,199900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Infiniti,QX50,2026,Midsize SUV,Petrol,187000,227000,https://www.zigwheels.ae/new-cars/infiniti,2026-09-06,single-source,Price range spans trims
+Infiniti,QX55,2026,Midsize SUV,Petrol,211000,238000,https://www.zigwheels.ae/new-cars/infiniti,2026-09-06,single-source,Price range spans trims
+Infiniti,QX60,2026,Large SUV,Petrol,260000,310000,https://www.zigwheels.ae/new-cars/infiniti,2026-09-06,single-source,Price range spans trims
+Infiniti,QX80,2026,Full Size SUV,Petrol,425000,485000,https://www.zigwheels.ae/new-cars/infiniti,2026-09-06,single-source,Price range spans trims
+Jaecoo,J5,2026,Compact SUV,Petrol,64900,79900,https://www.zigwheels.ae/new-cars/jaecoo,2026-09-06,single-source,Price range spans trims
+Jaecoo,J7,2026,Midsize SUV,Petrol,82900,102900,https://www.zigwheels.ae/new-cars/jaecoo,2026-09-06,single-source,Price range spans trims
+Jaecoo,J7 SHS,2026,Midsize SUV,PHEV,99900,104900,https://www.zigwheels.ae/new-cars/jaecoo,2026-09-06,single-source,Price range spans trims
+Jaecoo,J8,2026,Large SUV,Petrol,121900,147490,https://www.zigwheels.ae/new-cars/jaecoo,2026-09-06,single-source,Price range spans trims
+Jaguar,E-Pace,2026,Compact SUV,Petrol,198030,245070,https://www.zigwheels.ae/new-cars/jaguar,2026-09-06,single-source,Price range spans trims
+Jaguar,F-Pace,2026,Midsize SUV,Petrol,256620,448455,https://www.zigwheels.ae/new-cars/jaguar,2026-09-06,single-source,Price range spans trims
+Jaguar,F-Type,2026,Coupe,Petrol,297570,,https://www.zigwheels.ae/new-cars/jaguar,2026-09-06,CONFLICT,Source lists a top figure of AED 2.98M which looks like a data error; only the base is recorded
+Jaguar,I-Pace,2026,Midsize SUV,Electric,368760,450660,https://www.zigwheels.ae/new-cars/jaguar,2026-09-06,single-source,Price range spans trims
+Jeep,Commander,2026,Large SUV,Petrol,149900,,https://www.jeep-dubai.com/en/commander.html,2026-10-07,cross-checked,"1.3L turbo, 7 seats; price shown without an AED token, currency from page metadata; no VAT footnote"
+Jeep,Grand Cherokee L,2026,Large SUV,Petrol,179999,249999,https://www.zigwheels.ae/new-cars/jeep,2026-09-06,single-source,Price range spans trims
+Jeep,Wrangler 2-Door,2026,Large SUV,Petrol,182900,255900,https://www.zigwheels.ae/new-cars/jeep,2026-09-06,single-source,Price range spans trims
+Jeep,Wrangler,2026,SUV,Petrol,189900,,https://www.jeep-dubaiuae.com/en/offers/new-model/wrangler/,2026-10-07,CONFLICT,"CONFLICT: jeep-dubaiuae.com says AED 189,900, jeep-dubai.com says 192,499. Two official UAE domains disagree."
+Jeep,Grand Cherokee,2025,Large SUV,Petrol,189999,,https://www.jeep-dubai.com/en/grand-cherokee.html,2026-10-07,single-source,"was 234,900 from an aggregator; official site says 189,999. price shown without an AED token, currency from page metadata; no VAT footnote"
+Jeep,Wrangler 4-Door,2026,Large SUV,Petrol,199900,434900,https://www.zigwheels.ae/new-cars/jeep,2026-09-06,single-source,Price range spans trims
+Jeep,Grand Wagoneer,2026,Full Size SUV,Petrol,399900,,https://www.zigwheels.ae/new-cars/jeep,2026-09-06,single-source,
+Jetour,X50,2026,Compact SUV,Petrol,69500,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Jetour,X70,2026,Midsize SUV,Petrol,79000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Jetour,Dashing,2026,Midsize SUV,Petrol,89000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Jetour,T1,2026,Midsize SUV,Petrol,109000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Jetour,X90,2026,Large SUV,Petrol,112000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Jetour,T2 iDM,2026,Midsize SUV,PHEV,139900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Jetour,G700,2026,Large SUV,PHEV,179000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,"jetouruae.com titles it 'Jetour G700 Plug-in Hybrid' (2.0TD + dual motors); previously recorded as Petrol. Jetour publishes no cash prices, only monthly EMIs, so the price stays aggregator-sourced. Checked 2026-10-07."
+Kia,Picanto,2026,Hatchback,Petrol,56595,,https://www.kia-uae.com/showroom/picanto/features/,2026-10-07,single-source,"was 53,550 from an aggregator; official site says 56,595. 1.2L 83hp 4AT; no VAT footnote on site"
+Kia,Pegas,2026,Sedan,Petrol,58695,,https://www.kia-uae.com/showroom/pegas/features/,2026-10-07,single-source,"was 53,550 from an aggregator; official site says 58,695. 1.4L MPI 94hp"
+Kia,K3,2026,Sedan,Petrol,74445,,https://www.kia-uae.com/showroom/k3/features/,2026-10-07,single-source,"was 70,550 from an aggregator; official site says 74,445. 1.6L 121hp"
+Kia,Sonet,2026,Compact SUV,Petrol,80745,,https://www.kia-uae.com/showroom/sonet/features/,2026-10-07,single-source,"was 70,245 from an aggregator; official site says 80,745. 1.5L 113hp CVT"
+Kia,K4,2026,Sedan,Petrol,88095,,https://www.kia-uae.com/showroom/k4/features/,2026-10-07,single-source,"was 80,850 from an aggregator; official site says 88,095. 1.6L 121hp / 2.0L 150hp"
+Kia,Carens,2026,MPV,Petrol,89145,,https://www.kia-uae.com/showroom/the-kia-carens/features/,2026-10-07,single-source,"was 78,750 from an aggregator; official site says 89,145. 1.5L MPI 113hp CVT"
+Kia,Seltos,2026,Compact SUV,Petrol,89145,,https://www.kia-uae.com/showroom/seltos/features/,2026-10-07,single-source,"was 80,850 from an aggregator; official site says 89,145. 1.5L 113hp / 1.4T 138hp"
+Kia,Sportage,2026,Midsize SUV,Petrol,97650,139000,https://www.zigwheels.ae/new-cars/kia,2026-09-06,single-source,Price range spans trims
+Kia,Sportage L,2026,Midsize SUV,Petrol,104895,,https://www.kia-uae.com/showroom/sportagel/features/,2026-10-07,single-source,1.5T 197hp 2WD / 2.0T 233hp AWD
+Kia,K5,2026,Sedan,Petrol,106995,,https://www.kia-uae.com/showroom/k5/features/,2026-10-07,single-source,"was 102,900 from an aggregator; official site says 106,995. 2.5L 191hp 8AT"
+Kia,Sorento,2026,Large SUV,Petrol,135345,,https://www.kia-uae.com/showroom/sorento/features/,2026-10-07,single-source,"was 127,995 from an aggregator; official site says 135,345. 2.5L 178hp / 3.5L 268hp"
+Kia,EV3,2026,Compact SUV,Electric,141645,,https://www.kia-uae.com/showroom/ev3/features/,2026-10-07,single-source,"was 128,450 from an aggregator; official site says 141,645. 201hp, 58.3 or 81.4 kWh"
+Kia,Tasman,2026,Pickup,Petrol,143745,,https://www.kia-uae.com/showroom/tasman/features/,2026-10-07,single-source,"was 118,290 from an aggregator; official site says 143,745. 2.5L turbo 277hp 8AT"
+Kia,K8,2026,Sedan,Petrol,155295,,https://www.kia-uae.com/showroom/the-new-k8/features/,2026-10-07,single-source,3.5L V6 296hp
+Kia,Carnival,2026,MPV,Petrol,157395,,https://www.kia-uae.com/showroom/carnival/features/,2026-10-07,single-source,"was 152,250 from an aggregator; official site says 157,395. 3.5L 268hp 8AT"
+Kia,Telluride,2026,Large SUV,Petrol,171045,,https://www.kia-uae.com/showroom/telluride/features/,2026-10-07,single-source,"was 162,500 from an aggregator; official site says 171,045. 3.8L V6 291hp"
+Kia,EV5,2026,Midsize SUV,Electric,197295,,https://www.kia-uae.com/showroom/ev5/features/,2026-10-07,single-source,"was 168,200 from an aggregator; official site says 197,295. 214hp 2WD / 308hp AWD, 64.2 or 88.1 kWh"
+Kia,EV6,2026,Midsize SUV,Electric,230895,,https://www.kia-uae.com/showroom/ev6/features/,2026-10-07,single-source,"was 209,895 from an aggregator; official site says 230,895. 225hp 2WD / 320hp AWD, 77.4 kWh"
+Kia,EV9,2026,Large SUV,Electric,355845,,https://www.kia-uae.com/showroom/ev9/features/,2026-10-07,single-source,"215hp 2WD / 379hp AWD, 76.1 or 99.8 kWh"
+Lamborghini,Urus,2026,Large SUV,Petrol,900000,1550000,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,Price range spans trims
+Lamborghini,Temerario,2026,Coupe,PHEV,1030000,,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,
+Lamborghini,Huracan,2026,Coupe,Petrol,1050000,1140000,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,Price range spans trims
+Lamborghini,Revuelto,2026,Coupe,PHEV,2620000,,https://www.zigwheels.ae/new-cars/lamborghini,2026-09-06,single-source,
+Land Rover,Discovery Sport,2026,Compact SUV,Petrol,235000,,https://carswitch.com/uae/new-cars/land-rover,2026-09-06,single-source,
+Land Rover,Defender,2026,Large SUV,Petrol,237600,677390,https://carswitch.com/uae/new-cars/land-rover,2026-09-06,single-source,Price range spans trims
+Land Rover,Discovery,2026,Large SUV,Petrol,395600,,https://carswitch.com/uae/new-cars/land-rover,2026-09-06,single-source,
+Lexus,UX300h,2026,Compact SUV,Hybrid,172000,187000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,IS,2026,Sedan,Petrol,195000,270000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,NX,2026,Midsize SUV,Petrol,213000,258000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,NX Hybrid,2026,Midsize SUV,Hybrid,223000,261000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,ES,2026,Sedan,Petrol,240000,265000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,RX,2026,Large SUV,Petrol,287000,327000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,LS,2026,Sedan,Petrol,367000,457000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,LX,2026,Large SUV,Petrol,490000,650000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Lexus,LX 700h,2026,Large SUV,Hybrid,590000,680000,https://www.zigwheels.ae/new-cars/lexus,2026-09-06,single-source,Price range spans trims
+Maserati,Grecale,2026,Midsize SUV,Petrol,309000,479000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,Levante,2026,Large SUV,Petrol,429000,435000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,GranTurismo,2026,Coupe,Petrol,689000,819000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,GranCabrio,2026,Convertible,Petrol,800000,949900,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,MC20,2026,Coupe,Petrol,999000,1150000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Maserati,GT2 Stradale,2026,Coupe,Petrol,1080000,1120000,https://www.zigwheels.ae/new-cars/maserati,2026-09-06,single-source,Price range spans trims
+Mazda,3 Sedan,2026,Sedan,Petrol,76000,,https://www.zigwheels.ae/new-cars/mazda,2026-09-06,single-source,
+Mazda,CX-3,2026,Compact SUV,Petrol,79000,,https://mazda-uae.com/cars/,2026-10-07,cross-checked,"CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure"
+Mazda,Mazda3 Sedan,2026,Sedan,Petrol,79000,,https://mazda-uae.com/cars/,2026-10-07,single-source,"2.0L Skyactiv-G. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure (79,000 vs 77,000)"
+Mazda,6,2026,Sedan,Petrol,90000,105000,https://www.zigwheels.ae/new-cars/mazda,2026-09-06,single-source,Price range spans trims
+Mazda,Mazda6,2026,Sedan,Petrol,90000,,https://mazda-uae.com/cars/,2026-10-07,single-source,"orphan listing - non-clickable nav text with no model page, likely stale. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure"
+Mazda,CX-30,2026,Compact SUV,Petrol,95000,,https://mazda-uae.com/cars/,2026-10-07,single-source,"was 93,000 from an aggregator; official site says 95,000. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure (95,000 vs 93,000)"
+Mazda,CX-5,2026,Midsize SUV,Petrol,105000,,https://mazda-uae.com/cars/,2026-10-07,single-source,"was 104,000 from an aggregator; official site says 105,000. 2.5L Skyactiv-G 188hp. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure (105,000 vs 104,000)"
+Mazda,3 Hatchback,2026,Hatchback,Petrol,109000,,https://www.zigwheels.ae/new-cars/mazda,2026-09-06,single-source,
+Mazda,Mazda3 Hatchback,2026,Hatchback,Petrol,110000,,https://mazda-uae.com/cars/,2026-10-07,single-source,"CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure (110,000 vs 109,000)"
+Mazda,MX-5,2026,Convertible,Petrol,149000,,https://mazda-uae.com/cars/,2026-10-07,single-source,"was 144,000 from an aggregator; official site says 149,000. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure (149,000 vs 144,000)"
+Mazda,CX-60,2026,Midsize SUV,Hybrid,165000,,https://mazda-uae.com/cars/,2026-10-07,cross-checked,"3.3L inline-6 turbo mild hybrid. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure"
+Mazda,CX-90,2026,Large SUV,Hybrid,169000,,https://mazda-uae.com/cars/,2026-10-07,cross-checked,"3.3L inline-6 mild hybrid petrol or diesel. CAUTION: mazda-uae.com shows this price only in a per-page-cached nav that disagrees with itself across pages by 1,000-5,000; this is the majority figure"
+Mercedes-Benz,A-Class,2026,Hatchback,Petrol,182900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,V-Class,2026,MPV,Diesel,195000,295000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,GLA-Class,2026,Compact SUV,Petrol,218900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,A-Class Sedan,2026,Sedan,Petrol,228900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,GLB-Class,2026,Compact SUV,Petrol,248900,274900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,C-Class,2026,Sedan,Petrol,261900,285900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,EQA,2026,Compact SUV,Electric,269900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,EQB,2026,Compact SUV,Electric,283900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,GLC-Class,2026,Midsize SUV,Petrol,298900,319900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,CLE,2026,Coupe,Petrol,311900,336900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,E-Class,2026,Sedan,Petrol,326900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,GLC Coupe,2026,Coupe,Petrol,342900,377900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,EQE,2026,Sedan,Electric,358900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,AMG CLE,2026,Coupe,Petrol,466900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,GLE Coupe,2026,Coupe,Petrol,470900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,GLE-Class,2026,Large SUV,Petrol,472900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,GLS-Class,2026,Full Size SUV,Petrol,547900,908900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,AMG GT 4-Door,2026,Coupe,Petrol,559900,1030000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,EQS SUV,2026,Full Size SUV,Electric,580900,652900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,S-Class,2026,Sedan,Petrol,670900,754900,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,AMG SL,2026,Convertible,Petrol,674900,1040000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,EQS,2026,Sedan,Electric,723900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,G-Class,2026,Full Size SUV,Petrol,759900,1050000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,Maybach S-Class,2026,Sedan,Petrol,828900,1110000,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,Price range spans trims
+Mercedes-Benz,Maybach EQS SUV,2026,Full Size SUV,Electric,831900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,AMG GT,2026,Coupe,Petrol,901900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+Mercedes-Benz,Maybach GLS,2026,Full Size SUV,Petrol,977900,,https://www.zigwheels.ae/new-cars/mercedes-benz,2026-09-06,single-source,
+MG,MG 3,2026,Hatchback,Petrol,49000,,https://www.mg-uae.com/models/mg-3/,2026-10-07,single-source,1.5L; no VAT footnote on site
+MG,MG 5,2026,Sedan,Petrol,56000,,https://www.mg-uae.com/models/mg-5/,2026-10-07,single-source,1.5L 110hp
+MG,5,2026,Sedan,Petrol,57900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+MG,ZS,2026,Compact SUV,Petrol,65000,,https://www.mg-uae.com/models/mg-zs/,2026-10-07,single-source,"was 79,900 from an aggregator; official site says 65,000. 1.5T 170hp"
+MG,MG ONE,2026,Compact SUV,Petrol,74000,,https://www.mg-uae.com/models/mg-one/,2026-10-07,single-source,1.5T 168hp CVT
+MG,MG GT,2026,Sedan,Petrol,76000,,https://www.mg-uae.com/models/mg-gt/,2026-10-07,single-source,1.5T 168hp
+MG,MG 8 PHEV,2026,Sedan,PHEV,90600,,https://www.mg-uae.com/models/mg-8-phev/,2026-10-07,single-source,"DMH 201hp, EV range to 125km"
+MG,HS,2026,Midsize SUV,Petrol,96000,,https://www.mg-uae.com/models/mg-hs/,2026-10-07,single-source,"was 99,900 from an aggregator; official site says 96,000. 2.0T 370Nm. SUSPECT: MG lists the petrol HS and the HS Hybrid+ at the same 96,000 - likely a CMS error on MG's side, verify"
+MG,HS Hybrid+,2026,Midsize SUV,Hybrid,96000,,https://www.mg-uae.com/models/mg-hs-hybrid/,2026-10-07,single-source,"1.5T hybrid 221hp. SUSPECT: same price as the petrol HS on MG's own site, verify"
+MG,MG 7,2026,Sedan,Petrol,100000,,https://www.mg-uae.com/models/mg-7/,2026-10-07,single-source,2.0T 261hp
+MG,4 EV,2026,Hatchback,Electric,102060,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+MG,ZS EV,2026,Compact SUV,Electric,109900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+MG,RX9,2026,Large SUV,Petrol,117000,,https://www.mg-uae.com/models/mg-rx9/,2026-10-07,single-source,"2.0T 204hp AWD, 7 seats"
+MG,Cyberster,2026,Convertible,Electric,239000,,https://www.mg-uae.com/models/mg-cyberster/,2026-10-07,single-source,dual motor to 510hp
+MINI,Aceman,2026,Compact SUV,Electric,98767,159500,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,Price range spans trims
+MINI,3 Door,2026,Hatchback,Petrol,119999,142000,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,Price range spans trims
+MINI,5 Door,2026,Hatchback,Petrol,129999,169600,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,Price range spans trims
+MINI,Convertible,2026,Convertible,Petrol,176400,,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,
+MINI,Countryman,2026,Compact SUV,Petrol,190750,260950,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,Price range spans trims
+MINI,Cooper Electric,2026,Hatchback,Electric,235000,,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,
+MINI,Countryman Electric,2026,Compact SUV,Electric,250000,,https://www.zigwheels.ae/new-cars/mini,2026-09-06,single-source,
+Mitsubishi,Attrage,2026,Sedan,Petrol,36000,,https://www.yallamotor.com/news/car-prices-uae-2026-complete-guide-50-models-all-segments-55306,2026-09-05,single-source,Cheapest new car found in UAE listings
+Mitsubishi,Mirage,2026,Hatchback,Petrol,39900,40000,https://carswitch.com/uae/new-cars/mitsubishi,2026-09-06,single-source,Price range spans trims
+Mitsubishi,Xpander,2026,MPV,Petrol,59900,,https://habtoormotors.com/mitsubishi/offers_lp/the-mitsubishi-xpander-7-seat-family-space-from-aed-59900/,2026-10-07,single-source,"was 76,000 from an aggregator; official site says 59,900. 7 seats. VAT-inclusive per Al Habtoor's site-wide notice. CAUTION: a campaign 'from' price on an offers landing page, not a formal price list; page also says 'subject to bank approval'"
+Mitsubishi,Destinator,2027,Midsize SUV,Petrol,69900,,https://habtoormotors.com/mitsubishi/offers_lp/destinator-the-choice/,2026-10-07,single-source,"1.5L turbo, 7 seats. VAT-inclusive per Al Habtoor's site-wide notice. CAUTION: a campaign 'from' price on an offers landing page, not a formal price list; page also says 'subject to bank approval'"
+Mitsubishi,Eclipse Cross,2026,Compact SUV,Petrol,69900,119000,https://carswitch.com/uae/new-cars/mitsubishi,2026-09-06,single-source,Price range spans trims
+Mitsubishi,ASX,2026,Compact SUV,Petrol,72435,85000,https://carswitch.com/uae/new-cars/mitsubishi,2026-09-06,single-source,Price range spans trims
+Mitsubishi,Outlander,2026,Midsize SUV,Petrol,79900,,https://habtoormotors.com/mitsubishi/offers_lp/the-mitsubishi-outlander-7-seat-luxury-suv-from-aed-79900/,2026-10-07,single-source,"7 seats. VAT-inclusive per Al Habtoor's site-wide notice. CAUTION: a campaign 'from' price on an offers landing page, not a formal price list; page also says 'subject to bank approval'"
+Mitsubishi,L200,2026,Pickup,Diesel,81000,120000,https://carswitch.com/uae/new-cars/mitsubishi,2026-09-06,single-source,Price range spans trims
+Mitsubishi,Montero Sport,2026,Midsize SUV,Diesel,89900,135000,https://carswitch.com/uae/new-cars/mitsubishi,2026-09-06,single-source,Price range spans trims
+Mitsubishi,Pajero,2026,Large SUV,Petrol,155000,350000,https://carswitch.com/uae/new-cars/mitsubishi,2026-09-06,single-source,Price range spans trims
+Nissan,Magnite,2026,Compact SUV,Petrol,59900,71900,https://en.nissan-dubai.com/vehicles/new/magnite.html,2026-10-07,cross-checked,1.0L turbo; price incl 5% VAT (Nissan); no registration/insurance footnote
+Nissan,Kicks,2026,Compact SUV,Petrol,79900,109900,https://www.zigwheels.ae/new-cars/nissan/kicks/price,2026-09-06,cross-checked,"Trims: S 79900, SV 86900, SV Plus 94900, SL 106900, SR 109900. YallaMotor's 50000 was wrong"
+Nissan,Urvan,2026,Van,Petrol,91900,123900,https://en.nissan-dubai.com/vehicles/new/urvan.html,2026-10-07,cross-checked,panel van to 13-seat microbus; price incl 5% VAT (Nissan); no registration/insurance footnote
+Nissan,X-Trail,2026,Midsize SUV,Petrol,103900,155000,https://en.nissan-dubai.com/vehicles/new/x-trail.html,2026-10-07,single-source,"was 101,900 from an aggregator; official site says 103,900. 2.5L, 5 or 7 seats, 2WD/4WD; price incl 5% VAT (Nissan); no registration/insurance footnote"
+Nissan,Xterra,2026,Midsize SUV,Petrol,104000,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Nissan,X-Terra,2026,Midsize SUV,Petrol,104900,142900,https://en.nissan-dubai.com/vehicles/new/x-terra.html,2026-10-07,single-source,"7 seats, 2WD/4WD; price incl 5% VAT (Nissan); no registration/insurance footnote"
+Nissan,Altima,2026,Sedan,Petrol,110500,143500,https://en.nissan-dubai.com/vehicles/new/altima.html,2026-10-07,cross-checked,price incl 5% VAT (Nissan); no registration/insurance footnote
+Nissan,Maxima,2026,Large Sedan,Petrol,129500,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Nissan,Pathfinder,2026,Large SUV,Petrol,158000,213500,https://en.nissan-dubai.com/vehicles/new/pathfinder.html,2026-10-07,cross-checked,"CAUTION: legacy page, brochure and grade images are MY22 - may be the outgoing car, not current; price incl 5% VAT (Nissan); no registration/insurance footnote"
+Nissan,Z,2026,Coupe,Petrol,215900,,https://en.nissan-dubai.com/vehicles/new/Z.html,2026-10-07,cross-checked,price incl 5% VAT (Nissan); no registration/insurance footnote
+Nissan,Patrol,2026,Full Size SUV,Petrol,239900,449900,https://www.zigwheels.ae/car-news/nissan-patrol-2026-price-in-uae-full-variant-wise-otr-price-guide,2026-09-06,cross-checked,"11 trims: XE 239900, SE T2 264900, SE Titanium 293900, LE T1 297900, LE T2 321900, SE Platinum City 322900, LE Titanium 347900, LE Titanium+ 359900, PRO-4X 362900, LE Platinum City 389900, NISMO 449900. DriveArabia confirms 239900 base. YallaMotor's 199900 was wrong"
+Nissan,Patrol PRO-4X,2026,Full Size SUV,Petrol,362900,,https://en.nissan-dubai.com/vehicles/new/patrol-pro4x.html,2026-10-07,single-source,3.5L V6 twin-turbo 425hp; price incl 5% VAT (Nissan); no registration/insurance footnote
+Nissan,Patrol Nismo,2026,Full Size SUV,Petrol,449900,,https://www.zigwheels.ae/new-cars/nissan,2026-09-06,single-source,
+Omoda,C5,2026,Compact SUV,Petrol,69900,88400,https://www.zigwheels.ae/new-cars/omoda,2026-09-06,single-source,Price range spans trims
+Omoda,C7,2026,Midsize SUV,Petrol,88900,114900,https://www.zigwheels.ae/new-cars/omoda,2026-09-06,single-source,Price range spans trims
+Peugeot,Partner,2026,Van,Petrol,62500,65900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,208,2026,Hatchback,Petrol,66900,149900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,Landtrek,2026,Pickup,Diesel,69900,109900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,2008,2026,Compact SUV,Petrol,74900,99900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,Expert,2026,Van,Diesel,92900,,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,
+Peugeot,308,2026,Hatchback,Petrol,93900,,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,
+Peugeot,508,2026,Sedan,Petrol,109900,129900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,3008,2026,Midsize SUV,Petrol,129900,154900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,Traveller,2026,MPV,Diesel,134900,,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,
+Peugeot,5008,2026,Large SUV,Petrol,134900,159900,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,Price range spans trims
+Peugeot,408,2026,Sedan,Petrol,139900,,https://carswitch.com/uae/new-cars/peugeot,2026-09-06,single-source,
+Porsche,718,2026,Coupe,Petrol,269400,593300,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Porsche,Macan,2026,Midsize SUV,Petrol,271500,366900,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Porsche,Macan Electric,2026,Midsize SUV,Electric,310300,433500,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Porsche,Cayenne,2026,Large SUV,Petrol,394900,851900,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Porsche,Taycan,2026,Sedan,Electric,423400,946700,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Porsche,Panamera,2026,Sedan,Petrol,424700,756800,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Porsche,911,2026,Coupe,Petrol,518600,1040000,https://www.zigwheels.ae/new-cars/porsche,2026-09-06,single-source,Price range spans trims
+Renault,Duster,2026,Compact SUV,Petrol,52000,72000,https://carswitch.com/uae/new-cars/renault,2026-09-06,single-source,Price range spans trims
+Renault,Megane,2026,Sedan,Petrol,73000,75000,https://carswitch.com/uae/new-cars/renault,2026-09-06,single-source,Price range spans trims
+Renault,Arkana,2026,Compact SUV,Petrol,92500,,https://carswitch.com/uae/new-cars/renault,2026-09-06,single-source,
+Renault,Captur,2026,Compact SUV,Petrol,95000,120000,https://carswitch.com/uae/new-cars/renault,2026-09-06,single-source,Price range spans trims
+Renault,Koleos,2026,Midsize SUV,Petrol,119000,137000,https://carswitch.com/uae/new-cars/renault,2026-09-06,single-source,Price range spans trims
+Subaru,Outback,2026,Midsize SUV,Petrol,114900,180000,https://www.zigwheels.ae/new-cars/subaru,2026-09-06,single-source,Price range spans trims
+Subaru,Crosstrek,2026,Compact SUV,Petrol,120000,125000,https://www.zigwheels.ae/new-cars/subaru,2026-09-06,single-source,Price range spans trims
+Subaru,Forester,2026,Midsize SUV,Petrol,125000,142000,https://www.zigwheels.ae/new-cars/subaru,2026-09-06,single-source,Price range spans trims
+Subaru,BRZ,2026,Coupe,Petrol,130000,140000,https://www.zigwheels.ae/new-cars/subaru,2026-09-06,single-source,Price range spans trims
+Subaru,WRX,2026,Sedan,Petrol,157000,180000,https://www.zigwheels.ae/new-cars/subaru,2026-09-06,single-source,Price range spans trims
+Suzuki,EECO,2026,Minivan,Petrol,43900,,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,
+Suzuki,Dzire,2026,Sedan,Petrol,49900,55900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Swift,2026,Hatchback,Petrol,51900,60900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Baleno,2026,Hatchback,Petrol,54900,,https://suzuki.ae/vehicles/baleno,2026-10-07,single-source,"1.5L. CAUTION: this price appears ONLY in the page's HTML title metadata, never in the visible body text - weak provenance, verify before quoting"
+Suzuki,Ciaz,2026,Sedan,Petrol,54900,62900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Fronx,2026,Compact SUV,Petrol,64900,65900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Ertiga,2026,MPV,Petrol,64900,69900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Across,2026,Midsize SUV,PHEV,73485,93035,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Jimny,2026,Compact SUV,Petrol,74900,,https://suzuki.ae/vehicles/jimny,2026-10-07,single-source,"was 78,900 from an aggregator; official site says 74,900. 1.5L 102hp AllGrip Pro 4WD, 3- and 5-door. CAUTION: this price appears ONLY in the page's HTML title metadata, never in the visible body text - weak provenance, verify before quoting"
+Suzuki,Jimny 5 Door,2026,Compact SUV,Petrol,79900,93900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Suzuki,Grand Vitara,2026,Compact SUV,Petrol,79900,98900,https://www.zigwheels.ae/new-cars/suzuki,2026-09-06,single-source,Price range spans trims
+Tank,300,2026,Midsize SUV,Petrol,109900,154900,https://www.zigwheels.ae/new-cars/tank,2026-09-06,single-source,Price range spans trims
+Tank,500,2026,Large SUV,Petrol,149900,196000,https://www.zigwheels.ae/new-cars/tank,2026-09-06,single-source,Price range spans trims
+Tank,700,2026,Large SUV,PHEV,234900,,https://www.zigwheels.ae/new-cars/tank,2026-09-06,single-source,
+Tesla,Model Y,2026,Midsize SUV,Electric,174280,227770,https://carswitch.com/uae/new-cars/tesla,2026-09-06,single-source,Price range spans trims
+Tesla,Model 3,2026,Sedan,Electric,174380,209980,https://carswitch.com/uae/new-cars/tesla,2026-09-06,single-source,Price range spans trims
+Tesla,Cybertruck,2026,Pickup,Electric,404900,454900,https://carswitch.com/uae/new-cars/tesla,2026-09-06,single-source,Price range spans trims
+Tesla,Model S,2026,Sedan,Electric,411380,428870,https://carswitch.com/uae/new-cars/tesla,2026-09-06,single-source,Price range spans trims
+Tesla,Model X,2026,Large SUV,Electric,443980,458570,https://carswitch.com/uae/new-cars/tesla,2026-09-06,single-source,Price range spans trims
+Toyota,Raize,2026,Mini SUV,Petrol,63900,66900,https://www.toyota.ae/en/new-cars/raize,2026-10-06,cross-checked,"1.2L 63,900 / 1.0L Turbo 66,900"
+Toyota,Yaris,2026,Sedan,Petrol,64900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Liteace,2026,Van,Petrol,69900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,Toyota lists as Lite Ace Van
+Toyota,Corolla,2026,Sedan,Petrol,76900,83900,https://www.toyota.ae/en/new-cars/corolla,2026-10-06,cross-checked,"1.6L 76,900 / 2.0L 83,900"
+Toyota,Urban Cruiser,2026,Compact SUV,Petrol,79900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Veloz,2026,MPV,Petrol,81900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,Toyota lists as 7 Seater
+Toyota,Corolla Cross,2026,SUV,Petrol,86900,104900,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,"Toyota prices 1 trim online at 86,900; upper from dealer listings"
+Toyota,Corolla Hybrid,2026,Sedan,Hybrid,89900,,https://www.toyota.ae/en/new-cars/corolla-hybrid,2026-10-06,cross-checked,"1.8L, 30.3 km/L per Toyota"
+Toyota,C-HR,2026,SUV,Petrol,95900,,https://www.yallamotor.com/news/car-prices-uae-2026-complete-guide-50-models-all-segments-55306,2026-09-05,single-source,not on toyota.ae's lineup as of 2026-10-06 — may be discontinued in UAE; price still aggregator-sourced
+Toyota,Corolla Cross Hybrid,2026,SUV,Hybrid,96900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Hiace,2026,Van,Petrol,99900,131900,https://www.toyota.ae/en/new-cars/hiace,2026-10-06,single-source,"2.7L 99,900 / 3.5L V6 131,900; Toyota copy also mentions an unpriced 2.8L diesel"
+Toyota,RAV4,2026,SUV,Petrol,105900,123900,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,"Toyota prices 1 trim online at 105,900; upper from dealer listings"
+Toyota,RAV4 Hybrid,2026,SUV,Hybrid,114900,152900,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,"Toyota prices 1 trim online at 114,900; upper from dealer listings"
+Toyota,Hilux,2026,Pickup,Petrol,115900,155900,https://www.toyota.ae/en/new-cars/hilux,2026-10-06,single-source,"2.7L 115,900 / 4.0L V6 Adventure 155,900"
+Toyota,Camry,2026,Sedan,Petrol,122900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Camry Hybrid,2026,Sedan,Hybrid,125900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Innova Hybrid,2026,MPV,Hybrid,126900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,
+Toyota,Fortuner,2026,SUV,Petrol,128900,154900,https://www.toyota.ae/en/new-cars/fortuner,2026-10-06,cross-checked,"2.7L 164hp 128,900 / 4.0L V6 235hp 154,900"
+Toyota,Land Cruiser FJ,2027,SUV,Petrol,139900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,2027 model year; segment classified by us
+Toyota,GR 86,2026,Coupe,Petrol,162900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,segment classified by us
+Toyota,Land Cruiser 70,2026,Full Size SUV,Petrol,177900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,segment classified by us
+Toyota,GR Yaris,2027,Hatchback,Petrol,177900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,2027 model year; segment classified by us
+Toyota,GR Corolla,2026,Hatchback,Petrol,182900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,segment classified by us
+Toyota,Crown Hybrid,2026,Sedan,Hybrid,199900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Land Cruiser Prado,2026,Full Size SUV,Petrol,199900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Toyota,Highlander Hybrid,2026,Large SUV,Hybrid,205900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,segment classified by us
+Toyota,Granvia,2026,Minivan,Petrol,216900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,Toyota lists as Mini Van
+Toyota,Coaster,2026,Van,Petrol,218900,229900,https://www.toyota.ae/en/new-cars/coaster,2026-10-06,single-source,"23-seater bus; 2.7L 218,900 / 4.0L Turbo 229,900"
+Toyota,GR Supra,2026,Coupe,Petrol,238900,,https://www.toyota.ae/en/new-cars,2026-10-06,single-source,"was listed at 216,900 from yallamotor; toyota.ae prices GR Supra at 238,900 on 2026-10-06"
+Toyota,Land Cruiser,2026,Full Size SUV,Petrol,239900,399900,https://www.toyota.ae/en/new-cars/land-cruiser,2026-10-06,cross-checked,"Toyota prices 4.0L V6 271hp 239,900 and 3.5L TT 409hp 335,900; upper from dealer listings"
+Toyota,Land Cruiser Hybrid,2026,Full Size SUV,Hybrid,345900,,https://www.toyota.ae/en/new-cars,2026-10-06,cross-checked,
+Volkswagen,Jetta,2026,Sedan,Petrol,93100,,https://carswitch.com/uae/new-cars/volkswagen,2026-09-06,single-source,
+Volkswagen,T-Roc,2026,Compact SUV,Petrol,97077,,https://www.volkswagen-dubai.com/en/models/t-roc.html,2026-10-07,single-source,"was 103,300 from an aggregator; official site says 97,077. 1.4 TSI 150hp. Cash price, separate from the Lease-to-Own monthly on the same page"
+Volkswagen,Passat,2026,Sedan,Petrol,110300,,https://carswitch.com/uae/new-cars/volkswagen,2026-09-06,single-source,
+Volkswagen,Tiguan,2026,Midsize SUV,Petrol,113675,,https://www.volkswagen-dubai.com/en/models/tiguan.html,2026-10-07,single-source,"was 113,000 from an aggregator; official site says 113,675. 1.4 and 2.0 TSI"
+Volkswagen,Golf GTI,2026,Hatchback,Petrol,138809,,https://www.volkswagen-dubai.com/en/models/golf-gti.html,2026-10-07,single-source,265hp. Base Golf is not sold in Dubai
+Volkswagen,Golf,2026,Hatchback,Petrol,139500,199900,https://carswitch.com/uae/new-cars/volkswagen,2026-09-06,single-source,Price range spans trims
+Volkswagen,Amarok,2026,Pickup,Diesel,156300,185500,https://carswitch.com/uae/new-cars/volkswagen,2026-09-06,single-source,Price range spans trims
+Volkswagen,Teramont,2026,Large SUV,Petrol,177704,,https://www.volkswagen-dubai.com/en/models/teramont.html,2026-10-07,single-source,"was 175,360 from an aggregator; official site says 177,704. 2.0 TSI 270hp, 7 seats"
+Volkswagen,Golf R,2026,Hatchback,Petrol,195381,,https://www.volkswagen-dubai.com/en/models/golf-r.html,2026-10-07,single-source,333hp
+Volkswagen,Touareg,2026,Large SUV,Petrol,251700,300500,https://carswitch.com/uae/new-cars/volkswagen,2026-09-06,single-source,Price range spans trims
+Volvo,EX30,2026,Compact SUV,Electric,99900,205900,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,Price range spans trims
+Volvo,XC60,2026,Midsize SUV,Petrol,179900,229900,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,Price range spans trims
+Volvo,XC40,2026,Compact SUV,Petrol,189900,,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,
+Volvo,XC40 Recharge,2026,Compact SUV,Electric,220000,245000,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,Price range spans trims
+Volvo,C40 Recharge,2026,Compact SUV,Electric,221900,270000,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,Price range spans trims
+Volvo,ES90,2026,Sedan,Electric,234900,272900,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,Price range spans trims
+Volvo,XC90,2026,Large SUV,Petrol,269900,339900,https://www.zigwheels.ae/new-cars/volvo,2026-09-06,single-source,Price range spans trims
+Voyah,Free,2026,Large SUV,Electric,185000,,https://www.zigwheels.ae/new-cars/voyah,2026-09-06,single-source,
+Voyah,Dream,2026,MPV,Electric,275000,,https://www.zigwheels.ae/new-cars/voyah,2026-09-06,single-source,
+Zeekr,001,2026,Sedan,Electric,156900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,"Listed as ""Zeekr 1"" at source; likely the 001"
+Zeekr,7X RWD Standard,2026,SUV,Electric,169900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,
+Zeekr,7X AWD Performance,2026,SUV,Electric,209900,,https://www.zigwheels.ae/car-news/new-cars-in-uae-2026-complete-price-list-by-brand-and-budget,2026-09-05,single-source,

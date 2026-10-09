@@ -1,0 +1,19 @@
+category,item,value_from,value_to,unit,basis,source_url,checked_on,confidence,stale_days,notes
+Registration,Light vehicle under 3 tons,350,,AED,annual RTA registration fee,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,Dubai RTA
+Registration,Vehicle 3 to 12 tons,400,,AED,annual RTA registration fee,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,
+Registration,Heavy vehicle over 12 tons,800,,AED,annual RTA registration fee,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,
+Registration,Motorcycle,200,,AED,annual RTA registration fee,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,
+Registration,Vehicle inspection,170,200,AED,required for vehicles over 3 years old,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,
+Registration,Typical total light vehicle renewal,550,600,AED,registration plus inspection,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,"The real answer to 'what does renewal cost' — most guides quote only the 350"
+Registration,Late renewal fine,500,,AED,per month after the grace period,https://www.shory.com/car-insurance/blog/vehicle-registration-renewal-in-dubai-costs-documents-and-deadlines/,2026-09-07,single-source,180,"Forgetting for three months costs more than the car's whole annual registration"
+Salik,Peak crossing,6,,AED,"Mon-Sat 6-10am and 4-8pm",https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,Variable pricing since 31 January 2025
+Salik,Off-peak crossing,4,,AED,"Mon-Sat 10am-4pm and 8pm-1am",https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,
+Salik,Overnight crossing,0,,AED,1am to 6am daily,https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,"Free every night — the cheapest commute in Dubai is the one before 6am"
+Salik,Sunday crossing,4,,AED,flat all day except the free window,https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,
+Salik,Daily cap,0,,AED,none exists,https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,"There is NO daily or monthly cap — a common and expensive misconception"
+Salik,Tag purchased online,120,,AED,one-off including credit and delivery,https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,
+Salik,Tag purchased in person,100,,AED,one-off including prepaid credit,https://www.uaeexperthub.com/salik-toll-dubai/,2026-09-07,single-source,180,
+Fuel price,Super 98,3.80,,AED per litre,September 2026,https://gulfnews.com/business/energy/uae-announces-petrol-and-diesel-prices-for-september-2026-1.500657560,2026-09-07,cross-checked,31,"Was 3.60 in August. UAE resets fuel prices on the 1st of each month"
+Fuel price,Special 95,3.69,,AED per litre,September 2026,https://gulfnews.com/business/energy/uae-announces-petrol-and-diesel-prices-for-september-2026-1.500657560,2026-09-07,cross-checked,31,Was 3.49 in August
+Fuel price,E-Plus 91,3.61,,AED per litre,September 2026,https://gulfnews.com/business/energy/uae-announces-petrol-and-diesel-prices-for-september-2026-1.500657560,2026-09-07,cross-checked,31,Was 3.41 in August
+Fuel price,Diesel,4.30,,AED per litre,September 2026,https://gulfnews.com/business/energy/uae-announces-petrol-and-diesel-prices-for-september-2026-1.500657560,2026-09-07,cross-checked,31,"Was 3.80 in August — a 13.2% jump in one month. That is a video on its own"

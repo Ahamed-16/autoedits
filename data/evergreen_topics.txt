@@ -1,0 +1,90 @@
+# ============================================================================
+#  The evergreen list — your content calendar, in priority order.
+# ============================================================================
+#
+#  Autocomplete finds what people are searching for THIS WEEK. That is how the
+#  queue filled up with fuel prices and 2026 model-year pricing: real demand,
+#  but demand that expires. A video built on September's diesel price is wrong
+#  in October, and you do not have the time to re-shoot it.
+#
+#  Every line below is a question about a RULE — the law, a Central Bank
+#  regulation, a regulated insurance tariff. Most of these have been true for
+#  years and will still be true next year. The video keeps earning; you never
+#  touch it again.
+#
+#  Order is priority: line 1 is built first. Reorder the file to reorder the
+#  channel. Lines starting with # are ignored.
+#
+#      python -m autoedits.topics --evergreen     # load these into the queue
+#
+#  Only add a line here if data/*.csv can actually answer it — the pipeline
+#  will discard a script whose numbers it cannot cite, and that discard costs
+#  you six minutes of writing time.
+
+# --- the summer ------------------------------------------------- heat.csv
+# Top of the list on purpose. Fifty-degree heat is the one thing about driving
+# here that no global car channel has any reason to explain, and unlike a price
+# none of it ever needs revisiting.
+what 50 degree heat does to car tyres in uae
+why tyres fail in uae summer
+minimum tyre tread depth in uae
+worn tyre fine in uae
+does window tint keep a car cooler in dubai
+car tint fine in dubai
+how hot does a parked car get in dubai
+tyre pressure in uae summer
+how long does a car battery last in uae
+how hot a parked car gets in dubai
+
+# --- the regulated insurance policy ------------------------------- rules.csv
+# Almost nobody makes UAE videos about this and every single driver is affected.
+car insurance rules in uae
+car insurance excess in uae
+when is a car a total loss in uae
+car insurance depreciation in uae
+car insurance for under 25 drivers in uae
+courtesy car after an accident in uae
+third party insurance limit in uae
+what car insurance covers in uae
+
+# --- what insurance costs -------------------------------------- insurance.csv
+comprehensive vs third party insurance uae
+minimum car insurance price in uae
+car insurance no claims discount uae
+cheapest car insurance in dubai
+
+# --- car finance ---------------------------------------- rules.csv (CBUAE)
+# Regulation 29/2011. Unchanged for fifteen years.
+car loan rules in uae
+car loan down payment in uae
+maximum car loan period in uae
+car finance rules in dubai
+
+# --- traffic law and fines ---------------------------------------- rules.csv
+black points in uae
+seat belt fine in uae
+child car seat law in uae
+front seat age limit in uae
+phone while driving fine in uae
+red light fine in dubai
+speeding fine in uae
+car impound rules in dubai
+white points in dubai
+driving licence validity in uae
+
+# --- running costs ---------------------------------------------- ownership.csv
+# The structure is stable even where the numbers move; keep an eye on the
+# fuel rows, which expire every month on purpose.
+cost of owning a car in dubai
+car registration renewal cost in dubai
+salik charges in dubai
+salik free hours in dubai
+late registration fine in dubai
+car inspection cost in dubai
+
+# --- buying, by segment ------------------------------------------- cars.csv
+# These do age with the model year, but the *question* never goes away.
+cheapest 7 seater suv in uae
+cheapest suv in dubai
+cheapest electric car in uae
+best first car in uae

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Auto Edits Runbook</title>
+<style>
+:root{--bg:#0a0d12;--surface:#141922;--line:#222a36;--ink:#e8ecf2;--dim:#8b96a8;
+      --accent:#f5a524;--good:#3ddc84;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+     padding-block:40px}
+.wrap{max-width:840px;margin:0 auto;padding:0 20px}
+h1{font-size:34px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--dim);margin:0 0 36px;font-size:14px}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+   margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:16px;margin:26px 0 6px;font-weight:600}
+p{margin:6px 0 12px;color:var(--dim)}
+p.lead{color:var(--ink)}
+pre{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:6px;padding:13px 15px;overflow-x:auto;margin:10px 0 6px}
+code{font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+p code{background:var(--surface);padding:1px 5px;border-radius:3px;font-size:13px}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:6px;
+      padding:13px 15px;margin:14px 0;font-size:14px;color:var(--dim)}
+.note b{color:var(--ink)}
+.warn{border-left:3px solid var(--bad)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--accent);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+td:first-child{white-space:nowrap;color:var(--ink)}
+@media(max-width:560px){td:first-child{white-space:normal}h1{font-size:27px}}
+.tag{display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+     background:var(--line);color:var(--dim);padding:2px 7px;border-radius:3px;margin-left:8px;
+     vertical-align:middle}
+footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);
+       color:var(--dim);font-size:13px}
+</style></head><body><div class="wrap">
+
+<h1>Auto Edits Runbook</h1>
+<p class="sub">Every command, what it's for, and what it costs you if you skip it.</p>
+
+<div class="note warn"><b>Every command on this page assumes the virtualenv is active.</b>
+Running without it is what produced <code>streamlit: command not found</code> and
+<code>ModuleNotFoundError: googleapiclient</code>. Start every session with:
+<pre><code>cd ~/autoedits && source .venv/bin/activate</code></pre>
+<code>python -m autoedits.doctor</code> will tell you if you forgot.</div>
+
+<h2>When you sit down</h2>
+<pre><code>python -m autoedits.doctor</code></pre>
+<p>Pre-flight. Checks Python, Ollama, the voice engine, the YouTube token and
+the source audit. Run it first and nothing else surprises you.</p>
+
+<pre><code>streamlit run review_app.py</code></pre>
+<p>The review app — Drafts, Approved, Performance. Nothing publishes without
+you ticking it here.</p>
+
+<h2>The two lanes</h2>
+<p class="lead">The automation is two separate things that share a renderer, a
+review queue and an upload path. They have never been the same program.</p>
+<table>
+<tr><th>Lane</th><th>What starts it</th><th>What it makes</th></tr>
+<tr><td><b>Regular</b><br><code>pipeline.py</code></td>
+    <td>The nightly cron, on its own</td>
+    <td>Data shorts from curated UAE rules and prices. Runs whether you are
+        there or not.</td></tr>
+<tr><td><b>Events</b><br><code>photo_short.py</code></td>
+    <td>You, after a meet or a show</td>
+    <td>Shorts from your own photographs. Nothing in them can be claimed by
+        Content ID, because you shot all of it.</td></tr>
+</table>
+<p>Keep them separate deliberately. The regular lane is allowed to run
+unattended because every figure in it is gated against an official source. The
+event lane can never run unattended, because naming a car is a judgement and a
+wrong model costs more than a silent frame.</p>
+
+<h2>Making a video</h2>
+<p class="lead">Three routes. They differ by who writes the script.</p>
+
+<h3>1. The nightly queue <span class="tag">the model writes it</span></h3>
+<pre><code>python -m autoedits.pipeline</code></pre>
+<p>Takes topics off the queue, writes scripts with the local model, renders
+drafts. Right for volume. Wrong when the angle is the whole point — asked
+about a fines table, a 7B model writes "here are the fines".</p>
+
+<h3>2. A script you wrote <span class="tag">you write it</span></h3>
+<pre><code>mkdir -p work/my-slug
+$EDITOR work/my-slug/spec.json
+python -m autoedits.pipeline --from-spec my-slug</code></pre>
+<p>Skips the model, keeps everything after it: voice, render, sourcing gate,
+draft in the queue. Use it when the hook matters more than the throughput.
+The sourcing gate still applies — writing it yourself is not evidence.</p>
+
+<h3>3. Your own photographs <span class="tag">no script at all</span></h3>
+<p>After an event, scaffold the day. An event is a date, and your camera
+already puts the date in the filename:</p>
+<pre><code>python -m autoedits.photo_short --scaffold 20260117</code></pre>
+<p>Finds everything shot that day, orders it the way you walked round, and
+writes a manifest into <code>data/meets/</code>. Anything too small to fill a
+vertical frame or too soft to survive full size is held back as a commented
+line with the reason — uncomment it if you disagree.</p>
+<p><b>Captions come out blank on purpose.</b> That is the one part no tool
+should guess: a VENOM-badged 991 went out of here labelled as a RUF. Fill in
+the title, the captions you are sure of, then build:</p>
+<pre><code>python -m autoedits.photo_short data/meets/20260117.txt --draft
+python -m autoedits.photo_short --all --draft</code></pre>
+
+<div class="note"><b>Re-render without redoing the voice.</b> Voice takes about
+fifteen minutes on this box. If a render fails after it:
+<pre><code>python -m autoedits.pipeline --rebuild my-slug</code></pre></div>
+
+<h3>Publishing</h3>
+<pre><code>python -m autoedits.publish</code></pre>
+<p>Uploads everything you approved in the review app. Nothing else.</p>
+
+<h2>Checking the numbers</h2>
+<table>
+<tr><th>Command</th><th>What it answers</th></tr>
+<tr><td><code>python -m autoedits.analytics 90</code></td>
+    <td>Retention, traffic sources, and <b>subscribers per 1,000 views</b> per
+        video. Loops under about 0.30 means the format failed, not the topic.</td></tr>
+<tr><td><code>python -m autoedits.audit --likes</code></td>
+    <td>Likes and like-rate for every Short on the channel. A healthy Short is
+        2–5%. Add <code>--all</code> for long-form too.</td></tr>
+<tr><td><code>python -m autoedits.audit</code></td>
+    <td>The whole back catalogue into <code>data/channel_audit.csv</code> —
+        the view before any decision about the 479 videos.</td></tr>
+<tr><td><code>python -m autoedits.reconcile</code></td>
+    <td>Why the review app and YouTube Studio disagree about views. They use
+        different counters; this shows all of them side by side.</td></tr>
+<tr><td><code>python -m autoedits.publish --metrics</code></td>
+    <td>Pulls views/likes/comments into the local database for the
+        Performance tab.</td></tr>
+</table>
+
+<h2>Checking the facts</h2>
+<pre><code>python -m autoedits.sources
+python -m autoedits.sources --list</code></pre>
+<p>Audits every legal claim against the source registry. A claim about what the
+law requires must come from a <b>primary</b> or <b>official</b> source —
+uaelegislation.gov.ae, u.ae, RTA, MoI, the Central Bank rulebook. Press is fine
+for <i>that a rule changed</i>, never for <i>what it says</i>. Rows that fail
+are withheld from retrieval, so they cannot become videos.</p>
+
+<pre><code>python -m autoedits.topics --evergreen
+python -m autoedits.topics --probe "car insurance uae"</code></pre>
+<p>Refill the topic queue. Evergreen questions load at the top, because their
+answers don't expire.</p>
+
+<h2>Already automatic</h2>
+<p>The nightly cron runs the pipeline and leaves drafts. It never publishes.
+You don't need to run anything to make that happen — only to review it.</p>
+
+<h2>What expires, and when</h2>
+<table>
+<tr><th>Thing</th><th>Lifetime</th><th>What you do</th></tr>
+<tr><td>OAuth token</td><td><b>7 days</b> in Testing mode</td>
+    <td><code>python -m autoedits.publish --check</code> weekly. See below.</td></tr>
+<tr><td>Fuel prices</td><td>31 days</td><td>Update <code>ownership.csv</code> monthly</td></tr>
+<tr><td>Car prices, insurance</td><td>90 days</td><td>Re-check the rows quarterly</td></tr>
+<tr><td>Law, rules, heat</td><td>730 days</td><td>Barely moves — that's the point</td></tr>
+</table>
+
+<h2 style="color:var(--bad)">The seven-day trap</h2>
+<p class="lead">While the Google Cloud consent screen sits in <b>Testing</b>,
+Google kills your refresh token after seven days. Uploads stop. Drafts pile up
+looking fine. Nothing tells you.</p>
+<pre><code>python -m autoedits.publish --check    # weekly. is the connection alive?
+python -m autoedits.publish --auth     # re-authorise when it isn't</code></pre>
+<p><b>The permanent fix:</b> Google Cloud Console → APIs &amp; Services → OAuth
+consent screen → Publishing status → <b>Publish app</b>. Tokens then last until
+you revoke them. You'll see an "unverified app" warning at sign-in — Advanced →
+Go to The Auto Edits. It's your own app and you're the only user.</p>
+
+<h2>When something breaks</h2>
+<table>
+<tr><th>Symptom</th><th>Cause</th></tr>
+<tr><td><code>command not found</code></td>
+    <td>The venv isn't active. <code>source .venv/bin/activate</code>.</td></tr>
+<tr><td><code>ModuleNotFoundError</code></td>
+    <td>Same. You're on system Python.</td></tr>
+<tr><td><code>invalid_grant</code></td>
+    <td>Token expired or the OAuth client changed. <code>publish --auth</code>.
+        Replacing <code>client_secret.json</code> does <b>not</b> fix this —
+        <code>token.json</code> is the dead file.</td></tr>
+<tr><td>Views don't match Studio</td>
+    <td>Expected. Different counters. <code>reconcile</code>.</td></tr>
+<tr><td>A draft was skipped</td>
+    <td>A number in it had no traceable source. That gate is deliberate.</td></tr>
+<tr><td>Photos render sideways</td>
+    <td>Fixed — <code>ImageOps.exif_transpose</code> in render.py. If it
+        returns, that import went missing.</td></tr>
+</table>
+
+<footer>Kept current as commands change. If you find yourself asking
+"what's the command for…", that question belongs on this page.</footer>
+</div></body></html>

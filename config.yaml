@@ -1,0 +1,187 @@
+# ============================================================================
+#  Auto Edits — everything you tune lives here.
+#  Only three lines actually need your attention on day one; they're marked
+#  <-- SET THIS. Everything else has a working default.
+# ============================================================================
+
+channel:
+  name: The Auto Edits
+  region: AE                  # ISO country code used for search suggestions
+  language: en
+
+pipeline:
+  drafts_per_night: 3         # 3 good ones beat 20 generated ones
+  require_sources: true       # bin a script rather than publish an invented number
+
+
+# ---------------------------------------------------------------- WRITING --
+# This is the LLM that writes scripts. It has nothing to do with the voice.
+models:
+  writer: groq             # <-- SET THIS: "groq" (free tier, fast, 120B)
+                           #     or "ollama" (local, free, slow, 7B)
+
+  # Used when writer: groq. Free tier, no card: console.groq.com -> API Keys,
+  # then put the key in .env as GROQ_API_KEY=gsk_...
+  #
+  # Free-tier ceiling on this model is 8k tokens/minute and 200k/day. A script
+  # costs about 4k, so two a minute and ~50 a day. You make three a night.
+  # Going over returns a 429, never a bill — there is no card on file to charge.
+  #
+  # Alternatives: openai/gpt-oss-20b (smaller, same limits),
+  #               qwen/qwen3.8-27b   (also supports strict schemas)
+  groq_model: openai/gpt-oss-120b
+
+  # gpt-oss is a REASONING model: it spends tokens thinking before the JSON
+  # starts, and this ceiling covers both. If a run dies with
+  # finish_reason=length, the script was cut off mid-JSON — raise this.
+  # A thin topic measured 1,669 completion tokens on 2026-10-07 — 83% of a
+  # 2000 ceiling. 4000 doubles the headroom while keeping the worst case
+  # (2,981 prompt + 4,000) just under the free tier's 8k tokens/minute.
+  groq_max_tokens: 4000
+
+  # "", low, medium or high. Empty leaves Groq's default. Setting "low" buys
+  # back budget for the script itself at the cost of shallower reasoning.
+  groq_reasoning_effort: ""
+
+  # Used when writer: ollama. You already have Ollama installed.
+  #   ollama pull llama3.1:8b
+  ollama_host: http://localhost:11434
+  ollama_model: qwen2.5:7b
+  ollama_timeout: 900
+
+# ------------------------------------------------------------------ VOICE --
+# Completely separate system from the writer above. Ollama cannot do this.
+#
+#   chatterbox  free, MIT, clones YOUR voice from ~15s of reference audio.
+#               Slow on a CPU-only box, but fine for a 3am cron job.
+#               This is what every upload uses.
+#   kokoro      free, Apache-2.0, fast on CPU, preset voice. Not your voice,
+#               so it is only for checking scene timing while iterating.
+#
+# Avoid XTTS-v2 and F5-TTS despite what most tutorials recommend — both are
+# non-commercial licences, which does not cover a monetised channel.
+voice:
+  engine: chatterbox          # chatterbox (ships) | kokoro (timing tests only)
+
+  # --- kokoro ---
+  # Leading letter is accent (a=American, b=British), second is gender.
+  # Try: bm_george, bm_lewis, am_michael, am_adam, af_heart, bf_emma
+  kokoro_voice: bm_george
+  kokoro_lang: b
+
+  # --- chatterbox (your own voice) ---
+  # Record 15-20 seconds of yourself reading normally. Quiet room, no music,
+  # normal pace. Save as mono WAV and point this at it.
+  reference_audio: data/my_voice.wav
+
+
+# ----------------------------------------------------------------- TOPICS --
+#
+# The queue has two sources and they do different jobs.
+#
+#   data/evergreen_topics.txt  a hand-written list of questions about UAE law
+#                              and regulation. Loads at the TOP of the queue.
+#                              Those answers do not expire, so the videos keep
+#                              earning without you touching them again.
+#
+#   the seeds below            autocomplete harvesting. Finds what is being
+#                              searched *this week* — useful for discovering
+#                              phrasing you would never have guessed, but it
+#                              also surfaces questions whose answers go stale.
+#
+# Evergreen first, harvested second. That ordering is the content strategy.
+topics:
+  # Seeds are the OPENING of a real search, never a finished question —
+  # autocomplete completes prefixes, so a full sentence returns nothing.
+  seeds:
+    # Buying decisions — highest intent, your core lane
+    - best car to buy in uae
+    - which car to buy in uae
+    - cheapest suv in dubai
+    - best budget car in uae
+    - best family car in uae
+    - best first car in uae
+
+    # Cost of ownership — the questions nobody answers well for the UAE
+    - car insurance uae
+    - car maintenance cost dubai
+    - resale value in uae
+    - cost of owning a car in dubai
+
+    # Rules and law — the evergreen lane. These answers are set by the
+    # Insurance Authority, the Central Bank and the federal traffic law, and
+    # they stay put for years. data/rules.csv is what backs them.
+    - car insurance rules uae
+    - car insurance claim uae
+    - car loan uae
+    - traffic fine uae
+    - black points uae
+    - child car seat uae
+
+    # Summer. The climate does not change, so neither do these answers.
+    - car tyres uae
+    - tyre age uae
+    - window tint uae
+    - car battery uae
+    - car in summer dubai
+
+    # Segments
+    - electric car in dubai
+    - hybrid car in uae
+    - used car in dubai
+    - 7 seater car in uae
+
+    # Model-level — these are the ones where data/cars.csv actually helps,
+    # and where the comparison scene has real numbers to draw.
+    - toyota rav4 uae
+    - nissan patrol uae
+    - land cruiser uae
+    - byd uae
+    - jetour uae
+    - hyundai tucson uae
+
+  # A phrase must contain one of these to enter the queue. This region anchor
+  # is the whole strategic point: a generic "RAV4 review" competes with the
+  # entire internet, a UAE-specific one competes with almost nobody.
+  must_contain_any: [uae, dubai, abu dhabi, sharjah, emirates, gcc, aed]
+
+  # Never queue phrases containing these.
+  exclude:
+    # marketplace / not advice
+    - rent
+    - rental
+    - for sale
+    - olx
+    - wanted
+    # Salik admin — people wanting to check a balance, not buy a car
+    - salik balance
+    - salik recharge
+    - salik tag
+    - salik account
+    - investment
+    - share price
+    # other languages — real audience, wrong channel (see notes)
+    - malayalam
+    - tamil
+    - hindi
+    - urdu
+    - telugu
+    - arabic
+    # admin / not buying. "licence", "accident" and "rta fine" used to sit
+    # here; they now open the best evergreen lane you have, so they are out.
+    - job
+    - salary
+    - visa
+    - driving test
+    - driving school
+    - how to pay
+    # noise
+    - wallpaper
+    - gta
+    - game
+    - song
+    - crash
+    - fake
+
+work_dir: work
+db_path: data/autoedits.db
