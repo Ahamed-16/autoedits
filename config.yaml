@@ -37,7 +37,12 @@ models:
   # A thin topic measured 1,669 completion tokens on 2026-10-07 — 83% of a
   # 2000 ceiling. 4000 doubles the headroom while keeping the worst case
   # (2,981 prompt + 4,000) just under the free tier's 8k tokens/minute.
-  groq_max_tokens: 4000
+  groq_max_tokens: 3500
+
+  # Free-tier tokens-per-minute. Groq counts prompt AND the completion
+  # reservation against this, so the reservation is shrunk automatically to
+  # fit; raise it only if you leave the free tier.
+  groq_tpm: 8000
 
   # "", low, medium or high. Empty leaves Groq's default. Setting "low" buys
   # back budget for the script itself at the cost of shallower reasoning.

@@ -34,6 +34,9 @@ GROQ_MODEL = CFG["models"].get("groq_model", "openai/gpt-oss-120b")
 # this ceiling covers thinking AND output. "" leaves reasoning_effort unset.
 GROQ_MAX_TOKENS = int(CFG["models"].get("groq_max_tokens", 2000))
 GROQ_EFFORT = str(CFG["models"].get("groq_reasoning_effort", "") or "")
+# Groq counts prompt + max_completion_tokens against tokens-per-minute, so
+# the reservation is spent whether or not the model uses it. Free tier: 8000.
+GROQ_TPM = int(CFG["models"].get("groq_tpm", 8000))
 OLLAMA_HOST = CFG["models"]["ollama_host"]
 OLLAMA_MODEL = CFG["models"]["ollama_model"]
 # CPU-only boxes need a long leash: ~1500 tokens of JSON at 3-6 tok/s.

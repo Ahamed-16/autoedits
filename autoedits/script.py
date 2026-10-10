@@ -24,6 +24,7 @@ import requests
 
 from . import render as R
 from .config import (GROQ_EFFORT, GROQ_KEY, GROQ_MAX_TOKENS, GROQ_MODEL,
+                     GROQ_TPM,
                      OLLAMA_HOST, OLLAMA_MODEL, OLLAMA_TIMEOUT, WRITER,
                      require)
 
@@ -110,11 +111,16 @@ NARRATION
   reading are two different things — you need the first, not the second.
 - The stat scene's narration MUST contain the stat's own number. A stat scene
   whose voiceover never says the figure is a failed scene.
-- NARRATION IS READ ALOUD BY A HUMAN VOICE. Write every symbol and
-  abbreviation the way it is spoken: "dirhams", never "AED" (a voice says
-  "ay-ee-dee"); "ninety thousand", never "90k"; "per cent", never "%";
-  "kilometres", never "km". The on-screen text still uses AED and the
-  symbols — this rule is only for narration.
+- NARRATION IS READ ALOUD BY A HUMAN VOICE. Spell out ABBREVIATIONS, because
+  a voice reads them as letters: "dirhams", never "AED"; "per cent", never
+  "%"; "kilometres", never "km"; "horsepower", never "hp".
+- But write NUMBERS AS DIGITS: "139,900 dirhams", not "one hundred thirty-nine
+  thousand nine hundred dirhams". The speech engine reads digits correctly and
+  you do not. Spelling six figures out in words produced "thirty-nine thousand
+  nine hundred" for 139,900 — the leading hundred-thousand was dropped from
+  three prices in one sentence. Copy the digits exactly as the facts give them.
+- Never write "90k" or "1.4M" — those a voice does mangle. Write 90,000.
+- The on-screen text keeps AED and the symbols; this rule is only narration.
 - Narration length sets how long the scene stays up, so a rambling line means
   the viewer stares at the same frame and swipes away. Be brutal.
 
@@ -301,6 +307,37 @@ def _groq(prompt: str) -> str:
     return _groq_json(prompt, GROQ_SCHEMA, "short_script")
 
 
+# Groq's tokenizer counts higher than chars/4 — measured 4114 against an
+# estimate of 3480 on 2026-10-10, so budget 25% above the naive estimate.
+TOKEN_FUDGE = 1.25
+TPM_RESERVE = 200          # leave the minute a little room
+MIN_COMPLETION = 2200      # a full script measured 2130; below this is futile
+
+
+def _fit_completion(prompt: str) -> int:
+    """How many completion tokens we may reserve without a 413.
+
+    max_completion_tokens is not a free ceiling: Groq charges it against
+    tokens-per-minute up front. A 4000 reservation on top of a fact-rich
+    prompt asked for 8114 of an 8000 limit and the request was rejected
+    outright, so the reservation has to shrink to fit the prompt.
+    """
+    est = int((len(SYSTEM) + len(prompt)) / 4 * TOKEN_FUDGE)
+    room = GROQ_TPM - TPM_RESERVE - est
+    if room < MIN_COMPLETION:
+        raise RuntimeError(
+            f"The prompt alone is ~{est} tokens, leaving {room} of the "
+            f"{GROQ_TPM}/min budget for the reply — under the {MIN_COMPLETION} "
+            f"a full script needs. Trim the facts for this topic (cars."
+            f"facts_for limit), shorten SYSTEM, or raise models.groq_tpm if "
+            f"you are no longer on the free tier.")
+    fit = min(GROQ_MAX_TOKENS, room)
+    if fit < GROQ_MAX_TOKENS:
+        print(f"    prompt ~{est} tok, trimming reply budget "
+              f"{GROQ_MAX_TOKENS} -> {fit} to stay under {GROQ_TPM}/min")
+    return fit
+
+
 def _groq_json(prompt: str, schema: dict, schema_name: str) -> str:
     """Free-tier Groq. Uses strict structured outputs, so the schema is
     enforced by constrained decoding exactly as Ollama's grammar is — the
@@ -316,7 +353,7 @@ def _groq_json(prompt: str, schema: dict, schema_name: str) -> str:
                      {"role": "user", "content": prompt}],
         # Lower than default: structure beats flair here.
         "temperature": 0.6,
-        "max_completion_tokens": GROQ_MAX_TOKENS,
+        "max_completion_tokens": _fit_completion(prompt),
         "response_format": {"type": "json_schema",
                             "json_schema": {"name": schema_name,
                                             "strict": True,
@@ -345,6 +382,10 @@ def _groq_json(prompt: str, schema: dict, schema_name: str) -> str:
             time.sleep(wait)
             continue
 
+        if r.status_code == 413:
+            raise RuntimeError(
+                f"Groq rejected the request as too large for one minute "
+                f"(413). {r.text[:200]}")
         if r.status_code == 401:
             raise RuntimeError(
                 "Groq rejected the key (401). Check GROQ_API_KEY in .env — "
@@ -703,7 +744,8 @@ def generate(query: str, facts: str = "", writer: str | None = None) -> dict:
     # The voiceover is the one thing the first pass reliably gets wrong, and
     # it is cheap to fix in isolation. Only groq can do this — ollama has no
     # second-call budget on a CPU box.
-    bad = leans_on_screen(spec) + unspeakable(spec)
+    bad = (leans_on_screen(spec) + unspeakable(spec)
+           + misquotes_a_figure(spec) + spells_out_a_price(spec))
     if bad and name == "groq":
         print(f"    narration needs work ({len(bad)} line(s)); rewriting")
         for b in bad:
@@ -712,7 +754,9 @@ def generate(query: str, facts: str = "", writer: str | None = None) -> dict:
             repaired = rewrite_narration(spec)
             tidy(repaired)
             validate(repaired)
-            still = leans_on_screen(repaired) + unspeakable(repaired)
+            still = (leans_on_screen(repaired) + unspeakable(repaired)
+                     + misquotes_a_figure(repaired)
+                     + spells_out_a_price(repaired))
             if not still:
                 return repaired
             print(f"    repair left {len(still)} line(s) unfixed")
@@ -1095,6 +1139,67 @@ def unspeakable(spec: dict) -> list[str]:
     return bad
 
 
+# The writer said "39,900" for a 139,900 car, "77,900" for 177,900 and
+# "99,900" for 199,900 — three prices in one sentence, each exactly 100,000
+# light. That is a dropped leading digit group, and it has a signature: the
+# spoken figure differs from a real one by a clean power of ten.
+#
+# Checking instead that EVERY spoken number appears in the data would flag
+# model years, seat counts and honest arithmetic like "the GXR adds 15,000",
+# so this looks only for the truncation pattern.
+_DROPPED_GROUPS = (10_000, 100_000, 1_000_000)
+
+
+# A price written in words defeats misquotes_a_figure(), which finds digit
+# strings. "thirty-nine thousand nine hundred" for a 139,900 car contains no
+# digits at all, so the truncation that produced it would pass unseen. Force
+# the figure into digits and the detector can do its job.
+_SPELLED_BIG = re.compile(
+    r"\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|"
+    r"thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)"
+    r"[\w\s-]{0,40}?\b(?:thousand|million)\b", re.I)
+
+
+def spells_out_a_price(spec: dict) -> list[str]:
+    """Narration that writes a large figure in words instead of digits."""
+    bad = []
+    for sc in spec.get("scenes") or []:
+        n = _norm(sc.get("narration") or "")
+        m = _SPELLED_BIG.search(n)
+        if m:
+            bad.append(f"{n}   -> write \"{m.group(0)}\" as digits so the "
+                       f"figure can be checked against the data")
+    return bad
+
+
+def misquotes_a_figure(spec: dict) -> list[str]:
+    """Spoken prices that look like a real figure with a digit group lost."""
+    bad = []
+    for sc in spec.get("scenes") or []:
+        n = _norm(sc.get("narration") or "")
+        if not n:
+            continue
+        known = set()
+        if sc.get("value") is not None:
+            known.add(int(float(sc["value"])))
+        for row in sc.get("rows") or []:
+            if row.get("value") is not None:
+                known.add(int(float(row["value"])))
+        if not known:
+            continue
+        for m in re.findall(r"\d[\d,]{2,}", n):
+            said = int(m.replace(",", ""))
+            if said in known or 1990 <= said <= 2035:
+                continue                      # exact, or a model year
+            hits = [k for k in known
+                    if any(k - said == g for g in _DROPPED_GROUPS)]
+            if hits:
+                bad.append(f"{n}   -> says {said:,}, but the scene holds "
+                           f"{hits[0]:,} - a digit group was dropped")
+    return bad
+
+
 def leans_on_screen(spec: dict) -> list[str]:
     """Narration lines that only make sense while looking at the frame.
 
@@ -1154,13 +1259,24 @@ def _spell(n: int) -> str:
     return str(n)
 
 
+# Models emit U+2011/2013/2014 where we write "-", so "thirty\u2011nine" never
+# matched the ASCII "thirty-nine" we generate. That flagged correct lines.
+_DASHES = str.maketrans({"\u2010": "-", "\u2011": "-", "\u2012": "-",
+                         "\u2013": "-", "\u2014": "-", "\u2212": "-",
+                         "\u00a0": " "})
+
+
+def _norm(text: str) -> str:
+    return text.translate(_DASHES)
+
+
 def _says_number(text: str, value: float) -> bool:
     """Does this line actually state the figure, in digits or in words?"""
-    low = text.lower().replace(",", "")
+    low = _norm(text).lower().replace(",", "")
     n = int(value)
     if str(n) in low:
         return True
-    spoken = _spell(n)
+    spoken = _norm(_spell(n))
     if spoken in low:
         return True
     # "sixty-nine thousand five hundred" may be shortened to "sixty-nine
