@@ -99,18 +99,41 @@ FACTS
 
 NARRATION
 - ONE sentence per scene. 12-20 words. Never two sentences.
+- A NUMBER COSTS TIME. "139,900" is four characters and eleven syllables
+  spoken, about three seconds. Two six-figure prices in one line is ten
+  seconds of audio, longer than any scene holds, and the end of the script
+  gets cut. So in a compare line prefer the GAPS: "undercuts the 70 by
+  38,000 and the Prado by 60,000" says more than listing three prices and
+  takes four seconds less. Count 12-20 words as the ceiling, not the target,
+  and spend fewer words the more digits a line carries.
 - EVERY LINE MUST STAND ALONE WITH THE SCREEN OFF. A listener who only hears
-  the audio must still get the fact. Name the subject and say the number out
-  loud, in words a person would speak.
+  the audio must still get the fact. Name the subject and say the figure,
+  phrased the way a person would speak it.
 - Never open a line with "that", "those", "these", "this" or "it" pointing at
   something only the screen shows. "That's the sticker price" is a caption,
   not narration: the listener never heard a price. Write "The cheapest Jetour
-  starts at sixty-nine thousand five hundred dirhams" instead.
+  starts at 69,500 dirhams" instead.
 - Do not read the on-screen text back word for word either. Say the same fact
   differently, with the subject named. Standing alone and being a verbatim
   reading are two different things — you need the first, not the second.
 - The stat scene's narration MUST contain the stat's own number. A stat scene
   whose voiceover never says the figure is a failed scene.
+- The compare scene's narration MUST carry at least TWO real figures: two of
+  its own row values, or two exact GAPS between them, or one of each. The
+  screen draws the bars; the listener gets one sentence. "All three start
+  under 90,000" and "SUVs start higher but can vary" are not comparisons,
+  because the difference between two numbers IS the story and nobody can
+  hear a difference from one number. Both of these are right:
+    "The FJ starts at 139,900 against the 70's 177,900."
+    "The FJ undercuts the 70 by 38,000 and the Prado by 60,000."
+  The second is usually the better line. Prefer it when the gaps are clean.
+- The bullets scene's narration MUST name at least one amount from the facts.
+  "Insurance prices can differ, so always compare quotes" and "Toyota's
+  configurator shows monthly payments" have the shape of a fact and none of
+  the content. This scene exists to say what the price hides, which is only
+  worth 5 seconds if it says how much. If the facts hold no second figure
+  worth naming, LEAVE THIS SCENE OUT — only hook, verdict and question are
+  required.
 - NARRATION IS READ ALOUD BY A HUMAN VOICE. Spell out ABBREVIATIONS, because
   a voice reads them as letters: "dirhams", never "AED"; "per cent", never
   "%"; "kilometres", never "km"; "horsepower", never "hp".
@@ -314,17 +337,27 @@ TPM_RESERVE = 200          # leave the minute a little room
 MIN_COMPLETION = 2200      # a full script measured 2130; below this is futile
 
 
-def _fit_completion(prompt: str) -> int:
+def _fit_completion(prompt: str, want: int | None = None,
+                    floor: int | None = None) -> int:
     """How many completion tokens we may reserve without a 413.
 
     max_completion_tokens is not a free ceiling: Groq charges it against
     tokens-per-minute up front. A 4000 reservation on top of a fact-rich
     prompt asked for 8114 of an 8000 limit and the request was rejected
     outright, so the reservation has to shrink to fit the prompt.
+
+    `want` is for calls that KNOW they need less than a full script. The
+    repair pass returns six one-sentence lines — about 200 tokens — and was
+    reserving 3,316 of the same 8,000-per-minute budget the generate call
+    had just spent 4,269 of. That is why every repair hit three 429s in a
+    row: not too fast, just a reservation eleven times the size of the
+    answer.
     """
     est = int((len(SYSTEM) + len(prompt)) / 4 * TOKEN_FUDGE)
     room = GROQ_TPM - TPM_RESERVE - est
-    if room < MIN_COMPLETION:
+    if want is not None:
+        return max(1, min(want, room))
+    if room < (floor or MIN_COMPLETION):
         raise RuntimeError(
             f"The prompt alone is ~{est} tokens, leaving {room} of the "
             f"{GROQ_TPM}/min budget for the reply — under the {MIN_COMPLETION} "
@@ -338,7 +371,8 @@ def _fit_completion(prompt: str) -> int:
     return fit
 
 
-def _groq_json(prompt: str, schema: dict, schema_name: str) -> str:
+def _groq_json(prompt: str, schema: dict, schema_name: str,
+               want: int | None = None) -> str:
     """Free-tier Groq. Uses strict structured outputs, so the schema is
     enforced by constrained decoding exactly as Ollama's grammar is — the
     model cannot return a script with a field missing.
@@ -353,7 +387,7 @@ def _groq_json(prompt: str, schema: dict, schema_name: str) -> str:
                      {"role": "user", "content": prompt}],
         # Lower than default: structure beats flair here.
         "temperature": 0.6,
-        "max_completion_tokens": _fit_completion(prompt),
+        "max_completion_tokens": _fit_completion(prompt, want),
         "response_format": {"type": "json_schema",
                             "json_schema": {"name": schema_name,
                                             "strict": True,
@@ -466,7 +500,9 @@ OLLAMA_SCHEMA = {
         "title": {"type": "string"},
         "kicker": {"type": "string"},
         "description": {"type": "string"},
-        "tags": {"type": "array", "items": {"type": "string"}},
+        # Same hazard, same fix.
+    "tags": {"type": "array", "minItems": 3, "maxItems": 10,
+             "items": {"type": "string"}},
 
         "hook_text": {"type": "string"},
         "hook_narration": {"type": "string"},
@@ -503,7 +539,14 @@ OLLAMA_SCHEMA = {
         "compare_narration": {"type": "string"},
 
         "bullets_title": {"type": "string"},
-        "bullets": {"type": "array", "items": {"type": "string"}},
+        # Bounded deliberately. An unbounded array gives the constrained decoder
+    # no reason to ever close it: on 2026-10-10 the model tried, could not
+    # emit a bare "]", wrote it as a STRING element instead, and then poured
+    # bullets_narration, verdict_text and question_text into the array as
+    # further items. Groq rejected the whole script for missing properties.
+    # compare_rows has carried bounds from the start and has never done this.
+    "bullets": {"type": "array", "minItems": 2, "maxItems": 4,
+                "items": {"type": "string"}},
         "bullets_narration": {"type": "string"},
 
         "verdict_text": {"type": "string"},
@@ -664,14 +707,87 @@ REPAIR_SCHEMA = _strict({
 })
 
 
-def rewrite_narration(spec: dict) -> dict:
+def scenes_of(spec: dict) -> list[dict]:
+    return spec.get("scenes") or []
+
+
+def _narration_faults(spec: dict, facts: str = "") -> list[str]:
+    """Every narration check, in one place.
+
+    They were listed out twice — once before the repair and once after — and
+    a check added to one list and not the other would have silently stopped
+    applying to repaired scripts.
+    """
+    return (leans_on_screen(spec) + unspeakable(spec)
+            + misquotes_a_figure(spec) + spells_out_a_price(spec)
+            + invents_a_figure(spec, facts)
+            + compare_says_nothing(spec) + bullets_say_nothing(spec, facts)
+            + too_long_to_speak(spec))
+
+
+# How much of a complaint string to match a narration against. The checks
+# report either the whole line or its first 80 characters, so comparing a
+# prefix is the only thing that works for both.
+_MATCH = 60
+
+
+def _complaints_by_line(spec: dict,
+                        bad: list[str]) -> tuple[dict[int, list[str]], int]:
+    """Which scene each complaint is about, and how many did not map.
+
+    The checks report the offending narration and the fix. Mapping that back
+    to a scene index is what lets the repair prompt mark the lines that are
+    actually wrong — without it the model was handed six lines, told some
+    were broken, and rewrote all six.
+
+    Both sides go through _norm(). The checks report the NORMALISED line and
+    this compared it against the raw one, so any narration containing a
+    non-breaking hyphen failed to map — "thirty\u2011nine" against
+    "thirty-nine", a mismatch 44 characters in. The line was then labelled
+    "OK: return this line unchanged", the model obeyed, and the same
+    spelled-out price survived every repair on every re-roll. It looked like
+    the model ignoring an instruction and was the instruction being wrong.
+
+    The unmapped count is the caller's cue to stop trusting the OK labels.
+    """
+    out: dict[int, list[str]] = {}
+    unmapped = 0
+    for entry in bad:
+        text, _, reason = entry.partition("   -> ")
+        head = _norm(text).strip()[:_MATCH]
+        for i, sc in enumerate(spec.get("scenes") or []):
+            if head and _norm(sc.get("narration") or "").strip()[:_MATCH] == head:
+                out.setdefault(i, []).append(reason.strip() or
+                                             "does not stand alone without the screen")
+                break
+        else:
+            unmapped += 1
+    return out, unmapped
+
+
+def rewrite_narration(spec: dict, bad: list[str] | None = None,
+                      facts: str = "") -> dict:
     """Second pass: fix the voiceover without touching anything else.
 
     The first pass juggles structure, facts and phrasing at once and drops
     the phrasing. This call has one job, so it does it. Cheap: a few hundred
     tokens against the free tier's 200k/day.
+
+    `bad` is the output of the narration checks. Passing it is what makes the
+    difference between a repair and a re-roll: without it this call got no
+    feedback at all, rewrote every line including the five that were already
+    fine, and reliably came back with MORE failures than it started with.
     """
     scenes = spec.get("scenes") or []
+    flagged, unmapped = _complaints_by_line(spec, bad or [])
+    # A complaint we could not place means the OK labels are incomplete, and
+    # an incomplete OK label is worse than none: it tells the model to keep a
+    # line that is broken. Fall back to rewriting everything, which the
+    # revert-on-regression merge in generate() now makes safe.
+    if unmapped:
+        print(f"    {unmapped} complaint(s) could not be matched to a scene; "
+              f"rewriting every line")
+        flagged = {i: ["see the rules above"] for i in range(len(scenes))}
     lines = []
     for i, sc in enumerate(scenes, 1):
         on_screen = sc.get("text") or sc.get("label") or sc.get("title") or ""
@@ -683,22 +799,47 @@ def rewrite_narration(spec: dict) -> dict:
             extra = " [rows: " + "; ".join(
                 f"{r.get('name')} {r.get('value')}"
                 for r in (sc.get("rows") or [])) + "]"
-        lines.append(f"{i}. [{sc.get('type')}] on screen: {on_screen}{extra}\n"
-                     f"   current narration: {sc.get('narration','')}")
+        block = (f"{i}. [{sc.get('type')}] on screen: {on_screen}{extra}\n"
+                 f"   current narration: {sc.get('narration','')}")
+        for c in flagged.get(i - 1, []):
+            block += f"\n   PROBLEM: {c}"
+        if i - 1 not in flagged:
+            block += "\n   OK: return this line unchanged."
+        lines.append(block)
+
+    # Every figure the rewrite is allowed to use. The repair pass had no idea
+    # what was sourced and filled a gap with "registration of around 5,000
+    # dirhams" — a number that exists in no file in this project.
+    allowed = sorted(_structured_values(spec) |
+                     {int(m.replace(",", ""))
+                      for m in re.findall(r"\d[\d,]{2,}", facts or "")})
 
     prompt = (
-        "Rewrite the narration for this video. Return exactly "
+        "Fix the narration for this video. Return exactly "
         f"{len(scenes)} lines, one per scene, in order.\n\n"
-        "Each line must stand alone with the screen off: name the subject and "
-        "say the number out loud. Never begin with 'that', 'those', 'these', "
-        "'this' or 'it' pointing at the screen. Do not read the on-screen "
-        "text back word for word. 12-20 words, one sentence.\n\n"
-        "BAD:  That's the sticker price before any fees.\n"
-        "GOOD: The cheapest Jetour starts at sixty-nine thousand five hundred "
-        "dirhams before fees.\n\n"
+        "Lines marked OK are already correct — copy them back word for word. "
+        "Rewrite ONLY the lines marked PROBLEM, and change nothing else.\n\n"
+        "Rules for a line you rewrite:\n"
+        "- It must stand alone with the screen off: name the subject and say "
+        "the figure. Never begin with 'that', 'those', 'these', 'this' or "
+        "'it' pointing at the screen.\n"
+        "- Write every number in digits with comma groups: 139,900 — never "
+        "in words. Spelled-out numbers get truncated by the voice and "
+        "\"one hundred thirty-nine thousand nine hundred\" came out as "
+        "thirty-nine thousand nine hundred.\n"
+        "- Use ONLY these figures. Do not introduce any other number, and do "
+        "not estimate, round or add fees, taxes or extras:\n  "
+        + (", ".join(f"{v:,}" for v in allowed) or "(none)") + "\n"
+        "- Do not read the on-screen text back word for word. 12-20 words, "
+        "one sentence.\n\n"
+        "BAD:   That's the sticker price before any fees.\n"
+        "BAD:   It starts at sixty-nine thousand five hundred dirhams.\n"
+        "GOOD:  The cheapest Jetour starts at 69,500 dirhams before fees.\n\n"
         + "\n".join(lines))
 
-    raw = _groq_json(prompt, REPAIR_SCHEMA, "narration_repair")
+    # Six one-sentence lines, not a script. Reserving a full script's budget
+    # on top of the generate call that just ran is what triggered the 429s.
+    raw = _groq_json(prompt, REPAIR_SCHEMA, "narration_repair", want=900)
     out = _extract_json(raw).get("narrations") or []
     if len(out) != len(scenes):
         raise RuntimeError(
@@ -744,25 +885,55 @@ def generate(query: str, facts: str = "", writer: str | None = None) -> dict:
     # The voiceover is the one thing the first pass reliably gets wrong, and
     # it is cheap to fix in isolation. Only groq can do this — ollama has no
     # second-call budget on a CPU box.
-    bad = (leans_on_screen(spec) + unspeakable(spec)
-           + misquotes_a_figure(spec) + spells_out_a_price(spec))
+    bad = _narration_faults(spec, facts)
     if bad and name == "groq":
         print(f"    narration needs work ({len(bad)} line(s)); rewriting")
         for b in bad:
             print(f"      {b[:96]}")
         try:
-            repaired = rewrite_narration(spec)
+            repaired = rewrite_narration(spec, bad, facts)
             tidy(repaired)
             validate(repaired)
-            still = (leans_on_screen(repaired) + unspeakable(repaired)
-                     + misquotes_a_figure(repaired)
-                     + spells_out_a_price(repaired))
+            still = _narration_faults(repaired, facts)
             if not still:
                 return repaired
-            print(f"    repair left {len(still)} line(s) unfixed")
-            spec = repaired
-        except Exception as exc:                      # noqa: BLE001
-            print(f"    repair failed ({type(exc).__name__}), keeping original")
+
+            # Keep a rewritten line only if it is actually clean. The repair
+            # pass used to be allowed to hand back anything: on the FJ script
+            # it fixed one demonstrative and returned two spelled-out prices
+            # and an invented 5,000 for registration, so one fault became
+            # three. Reverting the lines it got wrong makes a repair unable
+            # to lose ground — the worst it can now do is nothing.
+            broken = set(_complaints_by_line(repaired, still)[0])
+            merged = json.loads(json.dumps(repaired))
+            reverted = 0
+            for i, (sc, orig) in enumerate(zip(merged["scenes"],
+                                               spec["scenes"])):
+                if i in broken and sc["narration"] != orig["narration"]:
+                    sc["narration"] = orig["narration"]
+                    reverted += 1
+            if reverted:
+                print(f"    kept {len(scenes_of(spec)) - reverted} rewritten "
+                      f"line(s); {reverted} came back worse and were reverted")
+            merged_bad = _narration_faults(merged, facts)
+            if not merged_bad:
+                return merged
+            spec, bad = merged, merged_bad
+        except RuntimeError as exc:
+            print(f"    repair call failed ({exc})")
+
+    # A gate that warns and hands the script over anyway is not a gate. This
+    # printed "repair left 3 line(s) unfixed" and then saved a script whose
+    # bullets invented 6,500 for alloy wheels, 9,200 for safety tech and
+    # 12,000 in finance fees — none of which exist in cars.csv. Binning the
+    # topic costs a draft; publishing invented prices costs the channel.
+    if bad:
+        raise RuntimeError(
+            "narration still fails its checks after a rewrite, so this "
+            "script is not safe to build:\n  "
+            + "\n  ".join(b[:160] for b in bad)
+            + "\nRe-run to roll again, or add the missing figures to "
+              "data/cars.csv so the writer has them.")
     return spec
 
 
@@ -957,6 +1128,135 @@ def unsourced(spec: dict) -> list[str]:
 MAX_SCENE = 5.0
 MIN_SCENE = 1.8
 
+# But a single ceiling for every scene silently truncated the audio. The
+# clamp below caps the VISUAL; ffmpeg's -shortest then cuts the voice to
+# match, and draft #106 lost the last 5.8 seconds of its narration — it ends
+# mid-sentence — because one compare line was 10.2 seconds of speech in a
+# 5-second scene. Nothing warned about it. A clamp that looks like a safety
+# feature was a truncation.
+#
+# The fix is to cap the WORDS, not the playback: a line that cannot be spoken
+# in its scene's budget fails too_long_to_speak() and gets rewritten shorter.
+# That only works if the budget matches the scene's job. Two six-figure
+# prices take 10 seconds to say at any honest rate, so a 5-second compare
+# scene is not a tight brief, it is an impossible one — and compare scenes
+# are required to state two figures.
+#
+# These come from the 14 measured clips in work/, rounded up from the longest
+# of each type. The retention problem MAX_SCENE was added for was a chart
+# sitting silent for 12 seconds; eight seconds while two prices are actually
+# being spoken is a different thing.
+SCENE_BUDGET = {
+    "hook":     4.5,     # measured 2.35 - 3.61
+    "stat":     5.5,     # measured 3.57 - 4.17
+    # 8.0 was wrong by 0.01s, which a test caught: the tersest honest way to
+    # say two six-figure prices, "The FJ starts at 139,900 against the 70's
+    # 177,900", is 9.21s of speech. A compare scene is REQUIRED to state two
+    # figures, so a budget that cannot hold two figures makes the two checks
+    # contradict each other and no script can satisfy both.
+    "compare":  9.0,     # measured 4.33 - 10.17; two spoken prices need 9.2
+    "bullets":  6.0,     # measured 4.69
+    "verdict":  6.5,     # measured 3.43 - 5.65
+    "question": 3.5,     # measured 2.17 - 2.81
+}
+
+# Estimating a clip's length from its text is noisy — the measured clips run
+# 2.4 to 5.5 spoken syllables per second, a 2.3x spread — so no single rate
+# both avoids failing lines that fit and catches every line that does not.
+#
+# The two errors do not cost the same. A false failure costs one re-roll. A
+# missed overrun used to cost a published video that stops mid-sentence, and
+# now costs a refused render after the voice has already been generated. So
+# the pre-check is tuned to catch the clear cases and truncation_seconds() is
+# the thing that actually guarantees nothing ships cut.
+#
+# Rate 3.8 with a 1.15 tolerance classifies all 14 measured clips correctly:
+# no false failures, no missed overruns. Fourteen is not many — if re-rolls
+# start clustering on one scene type, re-fit from the newer clips in work/
+# rather than nudging these by feel.
+# Refitted on 31 measured clips once two systematic errors were removed:
+# narrate() pads every clip with voice.TAIL of silence and the estimate never
+# counted it (0.45s x 6 scenes is 2.7s), and acronyms were counted by vowel
+# group, so "UAE" scored one syllable against three spoken. With both fixed
+# the median error is near zero at 5.0.
+SPEAK_RATE = 5.0         # spoken syllables per second
+SPEAK_TOLERANCE = 1.15   # how far over budget a prediction must be to fail
+
+# What a scene may stretch to beyond the check's ceiling, purely so that a
+# line the check ACCEPTED is never cut.
+#
+# The estimate's spread is irreducible: across those 31 clips the same text
+# ran anywhere from 2.4 to 5.5 spoken syllables per second, and the worst
+# under-prediction was 2.6 seconds. Clamping exactly at the check's ceiling
+# meant any line that came back slower than predicted lost its tail — which
+# is what refused the Denza render after five minutes of voice generation.
+#
+# Holding a visual two seconds longer than intended is a small cost. Cutting
+# the end off a sentence is not, so the slack goes to the audio.
+TRUNCATION_SLACK = 3.0
+
+
+def budget_for(kind: str) -> float:
+    """The intended length of this scene — the editorial target."""
+    return SCENE_BUDGET.get(kind, MAX_SCENE)
+
+
+def hard_budget_for(kind: str) -> float:
+    """The length this scene may actually reach.
+
+    The check and the clamp have to use the SAME ceiling or they contradict
+    each other: too_long_to_speak() allowed a line up to budget x tolerance
+    because the estimate is noisy, while to_scenes() clamped at the budget
+    itself, so a line that passed the check could still have its audio cut.
+    The tolerance is headroom for a bad estimate, and headroom the renderer
+    refuses to honour is not headroom.
+    """
+    return budget_for(kind) * SPEAK_TOLERANCE
+
+
+def speaking_seconds(text: str) -> float:
+    """How long this line's clip will be, trailing pad included.
+
+    narrate() pads every clip with TAIL seconds of silence and to_scenes()
+    consumes those padded lengths, so an estimate that leaves it out is
+    short by TAIL on every single scene.
+    """
+    from .voice import spoken_syllables, TAIL   # late: avoids an import cycle
+    return spoken_syllables(text) / SPEAK_RATE + TAIL
+
+
+def truncation_seconds(scenes, durations) -> float:
+    """How much voiceover the clamped visuals would throw away.
+
+    render() passes -shortest, so the output is as long as the VIDEO and the
+    audio is cut to fit. That is silent data loss: draft #106 shipped 20.2
+    seconds of video over 26.0 seconds of narration and ended mid-sentence,
+    and the only hint was a muxer warning about something else entirely.
+    """
+    return max(0.0, sum(durations or []) - sum(s.duration for s in scenes))
+
+
+def too_long_to_speak(spec: dict) -> list[str]:
+    """Narration that will not fit the scene it belongs to.
+
+    Caught here it costs a rewrite. Caught at render time it costs nothing,
+    because nothing catches it at render time — the audio is simply cut.
+    """
+    bad = []
+    for sc in spec.get("scenes") or []:
+        n = (sc.get("narration") or "").strip()
+        if not n:
+            continue
+        budget = budget_for(sc.get("type"))
+        need = speaking_seconds(n)
+        if need > hard_budget_for(sc.get("type")):
+            words = max(4, int(len(n.split()) * budget / need))
+            bad.append(
+                f"{_norm(n)}   -> about {need:.0f} seconds to speak, and this "
+                f"scene holds {budget:.0f}. Say the same thing in roughly "
+                f"{words} words, or drop a figure")
+    return bad
+
 
 def to_scenes(spec: dict, durations: list[float] | None = None) -> list[R.Scene]:
     """Turn the JSON script into renderable scenes. `durations` (seconds, one
@@ -1015,7 +1315,8 @@ def to_scenes(spec: dict, durations: list[float] | None = None) -> list[R.Scene]
             continue
 
         if d:
-            sc.duration = min(MAX_SCENE, max(MIN_SCENE, d))
+            sc.duration = min(hard_budget_for(kind) + TRUNCATION_SLACK,
+                              max(MIN_SCENE, d))
         scenes.append(sc)
     return scenes
 
@@ -1170,6 +1471,172 @@ def spells_out_a_price(spec: dict) -> list[str]:
         if m:
             bad.append(f"{n}   -> write \"{m.group(0)}\" as digits so the "
                        f"figure can be checked against the data")
+    return bad
+
+
+# unsourced() inspects structured fields — a stat's "value", a compare row's
+# "value". It never reads prose. So when the writer filled an empty bullets
+# scene with "trim upgrades cost up to 30,000 dirhams, off-road accessories
+# start at 12,000", _numbers() saw none of it, unsourced() returned [] and the
+# pipeline would have rendered three invented prices.
+#
+# A figure spoken in a sentence is a claim like any other. It has to come from
+# somewhere: a figure this spec actually holds, or honest arithmetic between
+# two of them (a price gap, a total).
+PROSE_FLOOR = 1000             # below this it is seats, speeds, years, words
+
+
+# Only the stat scene's narration was ever required to say its own figure.
+# compare and bullets had no equivalent, so both could pass every check while
+# carrying nothing: a compare scene narrated "The FJ is the cheapest Land
+# Cruiser variant at launch" without naming either price, under a hook that
+# promised "the FJ or the 70 model" — with 139,900 and 177,900 both sitting in
+# the facts it was handed. And when inventing figures started being blocked,
+# the bullets scene did not start finding real ones; it started saying
+# "Toyota's configurator shows monthly payments for each trim", which is a
+# sentence with the shape of a fact and none of the content.
+#
+# Blocking these is safe because validate() requires only hook, verdict and
+# question. A scene with no figures to speak has an escape hatch SYSTEM
+# already names: leave it out.
+
+def compare_says_nothing(spec: dict) -> list[str]:
+    """A compare scene whose voiceover carries fewer than two real figures.
+
+    The screen draws the bars; the listener hears one sentence. One figure is
+    a stat, not a comparison — the gap is the whole point, and you cannot
+    hear a gap from one number.
+
+    A GAP counts as a figure, which is the correction to how this check first
+    shipped. It demanded the row values specifically, and so rejected "The FJ
+    starts 38,000 dirhams cheaper than the 70 and 60,000 cheaper than the
+    Prado" — a line stating two exact differences between three prices in the
+    scene, which is the comparison expressed better than listing the prices
+    would. It is also the only arithmetic a viewer could check against the
+    bars. The replacement the repair pass produced was longer and said less.
+    """
+    bad = []
+    for sc in spec.get("scenes") or []:
+        if sc.get("type") != "compare":
+            continue
+        values = [float(r["value"]) for r in (sc.get("rows") or [])
+                  if r.get("value") is not None]
+        if len(values) < 2:
+            continue
+        gaps = {abs(a - b) for i, a in enumerate(values)
+                for b in values[i + 1:] if a != b}
+        n = sc.get("narration") or ""
+        spoken = {v for v in set(values) | gaps if _says_number(n, v)}
+        if len(spoken) < 2:
+            shown = ", ".join(
+                f"{r.get('name')} {int(float(r['value'])):,}"
+                for r in (sc.get("rows") or [])[:3] if r.get("value") is not None)
+            bad.append(
+                f"{_norm(n)}   -> a comparison the listener cannot hear. Say "
+                f"two of these prices ({shown}), or two of the gaps between "
+                f"them ({', '.join(f'{int(g):,}' for g in sorted(gaps)[:3])})")
+    return bad
+
+
+def bullets_say_nothing(spec: dict, facts: str = "") -> list[str]:
+    """A bullets scene whose voiceover carries no figure at all.
+
+    This scene exists to name what the sticker price hides, which is only
+    worth a scene if it names an amount. invents_a_figure() already proves
+    any figure here is real, so this only has to insist there is one.
+    """
+    sourced = _structured_values(spec) | {
+        int(m.replace(",", "")) for m in re.findall(r"\d[\d,]{2,}", facts or "")}
+    bad = []
+    for sc in spec.get("scenes") or []:
+        if sc.get("type") != "bullets":
+            continue
+        n = sc.get("narration") or ""
+        if any(_says_number(n, v) for v in sourced):
+            continue
+        bad.append(
+            f"{_norm(n)}   -> this scene is here to name what the price hides, "
+            f"and names no amount. Say one of the figures from the facts, or "
+            f"drop the scene")
+    return bad
+
+
+def _structured_values(spec: dict) -> set:
+    out = set()
+    for sc in spec.get("scenes") or []:
+        if sc.get("value") is not None:
+            out.add(int(float(sc["value"])))
+        for row in sc.get("rows") or []:
+            if row.get("value") is not None:
+                out.add(int(float(row["value"])))
+    return out
+
+
+def _derivable(said: int, shown: set, sourced: set | None = None) -> bool:
+    """Is this an honest gap or sum, with at least one figure on screen?
+
+    Requiring BOTH operands to be on screen rejected "the GXR adds 15,000",
+    where 154,900 is in the data but only 139,900 is displayed. Allowing both
+    operands to come from anywhere in the facts accepted an invented 12,000,
+    because 76,900 - 64,900 happens to equal it. So: one operand must be a
+    figure the video actually shows, which is also the only arithmetic a
+    viewer could check.
+    """
+    pool = sourced if sourced is not None else shown
+    for a in shown:
+        for b in pool:
+            if a - b == said or b - a == said or a + b == said:
+                return True
+    return False
+
+
+ROUND_TOLERANCE = 0.02         # "under 140,000" for a 139,900 car is honest
+
+
+def invents_a_figure(spec: dict, facts: str = "") -> list[str]:
+    """Prose figures that trace to nothing the writer was given.
+
+    First version compared only against the spec's own structured values and
+    was wrong in both directions: it flagged the real GXR delta (15,000), the
+    real monthly instalment (2,192) and an honest rounding (140,000), while
+    missing an invented "five percent" that sits below the floor. The repair
+    pass then rewrote those true figures into spelled-out words — the form
+    that caused the truncated prices in the first place.
+
+    So the comparison set is everything the writer could legitimately know:
+    the spec's own figures, arithmetic between them, and every number in the
+    facts block it was handed.
+    """
+    # Two different permissions, deliberately kept apart.
+    #   shown    - figures the video puts on screen. Arithmetic BETWEEN these
+    #              is honest, because a viewer can check it.
+    #   sourced  - everything the writer was handed. Quoting one is fine.
+    # Allowing arithmetic across the whole facts block was far too loose: 24
+    # numbers give ~570 pairwise differences, and 76,900 - 64,900 happens to
+    # equal 12,000, which let an invented accessory price through.
+    shown = _structured_values(spec)
+    sourced = shown | {int(m.replace(",", ""))
+                       for m in re.findall(r"\d[\d,]{2,}", facts or "")}
+    if not sourced:
+        return []
+    bad = []
+    for sc in spec.get("scenes") or []:
+        prose = [_norm(sc.get("narration") or "")]
+        prose += [_norm(b) for b in (sc.get("bullets") or [])]
+        for text in prose:
+            if not text:
+                continue
+            for m in re.findall(r"\d[\d,]*", text):
+                said = int(m.replace(",", ""))
+                if said < PROSE_FLOOR or 1990 <= said <= 2035:
+                    continue
+                if said in sourced or _derivable(said, shown, sourced):
+                    continue
+                # A rounded figure is not an invented one.
+                if any(abs(said - k) <= k * ROUND_TOLERANCE for k in sourced):
+                    continue
+                bad.append(f"{text[:80]}   -> {said:,} is not in the "
+                           f"script or the facts it was given")
     return bad
 
 
@@ -1380,11 +1847,16 @@ if __name__ == "__main__":
     #
     # Or just hit the writer once and see exactly what came back:
     #   python -m autoedits.script --probe "car expenses in dubai"
+    #
+    # Add --save to keep a script you like and render it:
+    #   python -m autoedits.script --probe --save "land cruiser fj uae price"
+    #   python -m autoedits.pipeline --from-spec land-cruiser-fj-uae-price
     import sys
 
     from . import cars
 
-    args = [a for a in sys.argv[1:] if a not in ("--compare", "--probe")]
+    args = [a for a in sys.argv[1:]
+            if a not in ("--compare", "--probe", "--save")]
     query = " ".join(args) or "nissan patrol vs land cruiser uae"
     facts = cars.facts_for(query)
     print(f"query : {query}")
@@ -1414,6 +1886,23 @@ if __name__ == "__main__":
               f"{len(lines)} lines, ~{total:.0f}s at 5.6 syl/sec")
         for n in lines:
             print(f"    {n}")
+
+        # A probe you like should be one command away from a video. Without
+        # this there was no way to keep a good script except re-rolling the
+        # dice in the pipeline and hoping for the same one.
+        if "--save" in sys.argv:
+            from .config import WORK
+            import re as _re
+            slug = _re.sub(r"[^a-z0-9]+", "-", query.lower()).strip("-")[:60]
+            d = WORK / slug
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "spec.json").write_text(
+                json.dumps(spec, indent=2, ensure_ascii=False))
+            print(f"\n  saved {d / 'spec.json'}")
+            print(f"  render it with:  python -m autoedits.pipeline "
+                  f"--from-spec {slug}")
+        else:
+            print("\n  (add --save to keep this one and render it)")
         sys.exit(0)
 
     if "--compare" in sys.argv:

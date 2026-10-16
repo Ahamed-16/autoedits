@@ -150,9 +150,92 @@ ENGINES = {
 # it one sentence at a time (see say) makes that rarer, not impossible. This
 # is the second net: a clip far shorter than its text could possibly be spoken
 # in did not say all of it, so generate it again.
-SYL_PER_SEC = 5.6          # brisk narration; deliberately generous
+# Measured, not guessed: 14 narration clips from the saved runs in work/
+# give a median of 4.1 spoken syllables per second, ranging 2.4 to 5.5.
+# 5.6 was optimistic by about a third, and the error was not evenly spread —
+# it under-counted exactly the lines this project most wants, because
+# "139,900" is four characters of digits and eleven syllables of speech.
+#
+# That mattered here twice over. This constant also sets the threshold below
+# which a clip is assumed truncated, so an inflated rate made the detector
+# too lenient: a clip missing half its words still measured 0.84 of the
+# expected length and passed the 0.70 test.
+SYL_PER_SEC = 4.4          # a little above the median, so a merely fast
+                           # clip is not mistaken for a truncated one
 SHORT_RATIO = 0.70         # below this share of the expected length, retry
 RETRIES = 2
+
+
+# "four by four", not "four ex four". The x survives number expansion
+# otherwise, and the engine reads it as a letter.
+_BY = re.compile(r"(?<!\w)(\d+)\s*[xX]\s*(\d+)(?!\w)")
+
+# A number, with optional comma groups and an optional decimal part.
+_NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def speakable(text: str) -> str:
+    """The narration rewritten as words, for the voice engine.
+
+    Chatterbox does not reliably read digits. Asked for "162,900 dirhams" it
+    said "sixty-two thousand nine hundred" — the leading hundred-thousand
+    silently gone, in a published draft, in the one figure the whole video
+    was about. Writing prices as digits was supposed to be the SAFE choice
+    after spelled-out numbers got truncated; it turns out both forms fail,
+    for different reasons, and only one of them is ours to control.
+
+    So the engine never sees a digit. The spec keeps its numerals, the
+    renderer still draws "AED 162,900" on screen, and only the text handed to
+    the synthesiser is expanded. That also makes the duration estimate exact
+    by construction, since it now counts the very words that get spoken.
+    """
+    from .script import _spell          # late: avoids an import cycle
+
+    def one(m: re.Match) -> str:
+        whole, _, frac = m.group(0).replace(",", "").partition(".")
+        out = _spell(int(whole)) if whole else ""
+        if frac:
+            # "12.3" -> "twelve point three": decimals are read digit by
+            # digit, which is how a person says a screen size or a 0-100 time.
+            out += " point " + " ".join(_spell(int(d)) for d in frac)
+        # Spaces on BOTH sides. Without the leading one, "B8" became
+        # "Beight" — a model name turned into a nonsense word, which the
+        # engine would have read aloud exactly as written.
+        return " " + out + " "
+
+    out = _NUMBER.sub(one, _BY.sub(r"\1 by \2", text))
+    # Tidy the seams, and keep punctuation tight to the word before it so
+    # sentence splitting still works.
+    out = re.sub(r"\s+", " ", out)
+    out = re.sub(r"\s+([,.;:!?])", r"\1", out)
+    # "B5's" expands to "B five 's" without this — the possessive floats off
+    # the word it belongs to and the engine reads it as a separate token.
+    return re.sub(r"\s+(['\u2019])", r"\1", out).strip()
+
+
+# An acronym is read letter by letter, and syllables() cannot see that:
+# "UAE" has one vowel group and three spoken syllables, "GLX" has none and
+# three. Undercounting them is what made a 4.7s estimate of the Denza hook
+# come back as 7.0s of audio. Only the COUNT is corrected — the engine reads
+# acronyms correctly on its own, so the text it receives is left alone.
+_ACRONYM = re.compile(r"(?<![A-Za-z])[A-Z]{2,}(?![A-Za-z])")
+_LETTER = {"W": "double you"}        # every other letter is one syllable
+
+
+def _spell_letters(word: str) -> str:
+    return " ".join(_LETTER.get(c, c) for c in word)
+
+
+def spoken_syllables(text: str) -> int:
+    """Syllables as the VOICE will say them, with digits spelled out.
+
+    syllables("139,900 dirhams") counts 4; Chatterbox says "one hundred
+    thirty-nine thousand nine hundred dirhams" and takes 14. Every length
+    estimate in this project was wrong by that gap, and wrong in the
+    direction that truncates audio.
+    """
+    return syllables(_ACRONYM.sub(lambda m: _spell_letters(m.group(0)),
+                                  speakable(text)))
 
 
 def syllables(text: str) -> int:
@@ -169,7 +252,7 @@ def syllables(text: str) -> int:
 
 def _speak_checked(engine, text: str, out_path: Path) -> Path:
     """Generate, and regenerate while the clip is impossibly short for the text."""
-    expected = syllables(text) / SYL_PER_SEC
+    expected = spoken_syllables(text) / SYL_PER_SEC
     for attempt in range(RETRIES + 1):
         engine(text, out_path)
         got = duration(out_path)
@@ -208,6 +291,9 @@ def say(text: str, out_path: Path, engine_name: str | None = None) -> Path:
             f"Unknown voice engine {chosen!r}. "
             f"Pick one of: {', '.join(ENGINES)}")
     engine = ENGINES[chosen]
+
+    # Numbers become words before the engine ever sees them. See speakable().
+    text = speakable(text)
 
     parts = split_sentences(text)
     if len(parts) <= 1:

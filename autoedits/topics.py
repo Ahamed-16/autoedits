@@ -155,6 +155,86 @@ def seed_evergreen(verbose: bool = True) -> int:
     return len(phrases)
 
 
+# A phrase you typed yourself outranks both the curated list and anything
+# harvested. You asked for it by name; the queue should not make you wait.
+ADDED_TOP = 2000.0
+
+
+def coverage(query: str) -> tuple[int, list[str]]:
+    """How many rows the writer would get for this phrase, and the first few."""
+    from .cars import facts_for
+    rows = [r for r in facts_for(query).splitlines() if r.strip()]
+    return len(rows), rows
+
+
+def check(query: str, indent: str = "  ", queued: bool = True) -> bool:
+    """Report whether this phrase can become a video. True if it can.
+
+    Four separate things decide that, and before this they were spread across
+    three modules and announced by nothing: retrieval has to find rows, the
+    dedupe guards have to let the phrase through, and the pipeline has to be
+    willing to build it. A phrase that fails any of them used to just never
+    appear, which is indistinguishable from a queue that has not got to it.
+    """
+    query = query.strip().lower()
+    n, rows = coverage(query)
+    ok = True
+
+    if n:
+        print(f"{indent}data      {n} row(s) your files can support this with")
+        for row in rows[:3]:
+            print(f"{indent}          · {row.split(' | [source:')[0][:96]}")
+        if n > 3:
+            print(f"{indent}          … and {n - 3} more")
+    else:
+        ok = False
+        print(f"{indent}data      NOTHING — the writer would have no figures, so "
+              f"the run skips this")
+        print(f"{indent}          Fix it by adding rows to data/cars.csv (or the "
+              f"cost/law files) that")
+        print(f"{indent}          use the words this phrase uses. Check what it "
+              f"matched on with:")
+        print(f"{indent}            python -m autoedits.cars --why "
+              f"{query!r}")
+
+    for sim, title in db.near_misses(query):
+        print(f"{indent}overlap   {sim:.0%} with a video you made: {title!r}")
+
+    reason = db.why_blocked(query)
+    if reason and not queued and reason.startswith("not in the queue"):
+        # --check is asking "could this be built", not "is it queued".
+        print(f"{indent}queue     not queued yet — --add would put it on top")
+    elif reason:
+        ok = False
+        print(f"{indent}queue     BLOCKED: {reason}")
+    else:
+        print(f"{indent}queue     clear")
+
+    print(f"{indent}verdict   {'the next run can build this' if ok else 'the next run will NOT build this'}")
+    return ok
+
+
+def add(phrases: list[str]) -> int:
+    """Queue phrases at the top and say, for each, whether it can be built."""
+    db.init()
+    buildable = 0
+    for i, phrase in enumerate(phrases):
+        phrase = phrase.strip().lower()
+        if not phrase:
+            continue
+        db.promote_topic(phrase, "added", ADDED_TOP - i)
+        print(f"\nqueued {phrase!r} at the top of the queue")
+        if (r := why_rejected(phrase)):
+            # Not fatal — a phrase you typed does not have to look like
+            # something autocomplete would have produced. Worth saying out
+            # loud, because it usually means a typo.
+            print(f"  note      autocomplete would have dropped this ({r})")
+        buildable += check(phrase)
+    print(f"\n{buildable} of {len(phrases)} ready to build."
+          + ("  Next: python -m autoedits.pipeline" if buildable else ""))
+    return 0 if buildable else 1
+
+
 def competition(query: str) -> float | None:
     """Rough contest score, 0-1, lower is easier. Needs a YouTube API key.
 
@@ -254,9 +334,51 @@ def probe() -> int:
     return 0 if STATS.get("ok") else 1
 
 
+USAGE = """Topic queue.
+
+    python -m autoedits.topics                     harvest autocomplete, refill
+    python -m autoedits.topics --evergreen         reload data/evergreen_topics.txt
+    python -m autoedits.topics --add "phrase" ...  queue your own, top priority
+    python -m autoedits.topics --check "phrase"    can this be built? (queues nothing)
+    python -m autoedits.topics --probe             test the suggest endpoint
+"""
+
+
+def _phrases(flag: str) -> list[str]:
+    """Everything after the flag that is not itself a flag."""
+    rest = sys.argv[sys.argv.index(flag) + 1:]
+    out = []
+    for a in rest:
+        if a.startswith("--"):
+            break
+        out.append(a)
+    return out
+
+
 if __name__ == "__main__":
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print(USAGE)
+        raise SystemExit(0)
+
     if "--probe" in sys.argv:
         raise SystemExit(probe())
+
+    if "--add" in sys.argv:
+        if not (ps := _phrases("--add")):
+            print('Give it a phrase: --add "cheapest electric suv in uae"')
+            raise SystemExit(2)
+        raise SystemExit(add(ps))
+
+    if "--check" in sys.argv:
+        if not (ps := _phrases("--check")):
+            print('Give it a phrase: --check "cheapest electric suv in uae"')
+            raise SystemExit(2)
+        db.init()
+        bad = 0
+        for ph in ps:
+            print(f"\n{ph!r}")
+            bad += not check(ph, queued=False)
+        raise SystemExit(1 if bad else 0)
 
     if "--evergreen" in sys.argv:
         # No network, no autocomplete — just reload the curated list. Useful

@@ -1,0 +1,130 @@
+"""Regression tests for cars.facts_for.
+
+Every case here is a bug that actually shipped. The comments in cars.py
+record them in prose; this file makes them fail a test run instead, so the
+next person to touch the scoring finds out immediately.
+
+    python -m pytest tests/test_retrieval.py -q
+    python tests/test_retrieval.py            # same, without pytest
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from autoedits.cars import facts_for     # noqa: E402
+
+# (query, must appear in the first N lines, must not appear anywhere)
+# `leads` is checked against the top three rows: ranking is the thing these
+# bugs got wrong, and demanding the exact first row makes the test brittle
+# against a legitimate price-order change.
+CASES: list[tuple[str, list[str], list[str]]] = [
+    # The T1 sat seventh in its own query, behind six other Jetours ordered
+    # only by price, and a MINI Cooper ELECTRIC outranked it because the
+    # phrase rule "ev" fired inside "r-ev-iew".
+    ("jetour t1 uae review", ["T1"], ["MINI", "Cooper"]),
+    ("jetour g700 uae review", ["G700"], ["MINI", "Cooper"]),
+
+    # "maximum" scored as a rare word and found "Maximum total repayments".
+    ("maximum tint percentage uae", ["tint"], ["repayment"]),
+
+    # Both rows contain "car", so a flat word count answered an impound
+    # question with a car loan.
+    ("car impound rules in dubai", ["impound"], ["loan", "Registration"]),
+
+    # insurance.csv loads first, so file order answered this with a
+    # third-party liability table.
+    ("salik charges dubai", ["Salik"], ["liability"]),
+
+    # Plural folding: without it this matched no row saying "tyre" and
+    # answered an age question with the fine.
+    ("how old can car tyres be in uae", ["age", "tyre"], []),
+
+    # Vocabulary bridges: nobody types the word a spec sheet uses.
+    ("7 seater car in dubai", ["MPV", "seat", "Large", "Full"], []),
+    ("best first car in uae", ["Hatchback", "Sedan", "Compact"], []),
+
+    # Price-ranked questions. These are about RANKING, which is why each one
+    # names the row that must lead: a cheapest-X video whose first figure is
+    # not the cheapest X is wrong in the one way the title promises.
+    ("cheapest cars in uae", ["Arrizo"], []),
+    ("budget cars in uae", ["Arrizo"], []),
+    ("best budget car in dubai", ["Arrizo"], []),
+    # Led by four petrol SUVs, because price sorted ahead of match quality.
+    ("cheapest electric suv in uae", ["Spark EUV"], ["Petrol"]),
+    # And then by a MINI Cooper ELECTRIC at AED 235,000, because "electric"
+    # scores 3x against a model NAME and 1x against a powertrain.
+    ("cheapest electric car in uae", ["BYD Qin Plus"], []),
+    # Led by a Land Cruiser 70 at AED 177,900 — a Full Size SUV matched two
+    # words of the "7 seater" bridge where an MPV matched one.
+    ("cheapest 7 seater in uae", ["Xpander", "MPV"], []),
+    ("cheapest nissan in uae", ["Magnite"], []),
+    # The guard on the fallback: the cheapest rows in this file are not an
+    # answer to a question about a brand it has nothing cheap from.
+    ("cheapest ferrari in uae", ["Ferrari"], ["Chery", "Mitsubishi"]),
+
+    # The highest-demand phrase in the whole queue, and it returned nothing.
+    ("car expenses in dubai", ["Registration", "Salik", "Fuel"], []),
+    ("running cost of a car in uae", ["Registration", "Salik", "Fuel"], []),
+
+    # Deliberate non-matches. "black"/"white" and "hot" stay out of the
+    # routing words so these remain shopping queries.
+    ("white car dubai", [], ["black point", "Black point"]),
+    ("hot hatch uae", [], ["temperature", "Cabin"]),
+]
+
+
+def _check(query, leads, forbidden):
+    out = facts_for(query)
+    problems = []
+    if not out:
+        # A case that only lists forbidden rows is asserting "do not route
+        # this query into the wrong file". Returning nothing satisfies that.
+        return [] if not leads else [f"{query!r} returned nothing at all"]
+    head = "\n".join(out.splitlines()[:3])
+    if leads and not any(w.lower() in head.lower() for w in leads):
+        problems.append(
+            f"{query!r}: none of {leads} in the top 3 rows:\n      "
+            + "\n      ".join(out.splitlines()[:3]))
+    for w in forbidden:
+        if re.search(rf"(?i)(?<!\w){re.escape(w)}", out):
+            problems.append(f"{query!r}: {w!r} should not appear, but does")
+    return problems
+
+
+def test_retrieval_regressions():
+    failures = [p for q, l, f in CASES for p in _check(q, l, f)]
+    assert not failures, "\n  " + "\n  ".join(failures)
+
+
+# Topics the data genuinely cannot answer must come back empty rather than
+# returning a plausible-looking but unrelated set. A hollow script costs a
+# render; these return nothing so the pipeline skips them.
+UNCOVERED = ["used car prices in uae", "car mechanic in dubai",
+             "car ride in dubai", "vat refund in uae",
+             # Process questions about the RTA portal. Routing these in got
+             # the writer a seat-belt fine to talk about under a title
+             # promising something else — see ROUTE_ONLY in cars.py.
+             "traffic fine check online uae", "how to check traffic fine uae"]
+
+
+def test_uncovered_stays_empty():
+    wrong = [q for q in UNCOVERED if facts_for(q)]
+    assert not wrong, f"these have no supporting data and should return nothing: {wrong}"
+
+
+if __name__ == "__main__":
+    bad = 0
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            try:
+                fn()
+                print(f"ok    {name}")
+            except AssertionError as exc:
+                bad += 1
+                print(f"FAIL  {name}{exc}")
+    raise SystemExit(bad)

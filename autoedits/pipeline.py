@@ -61,6 +61,21 @@ def make_one(topic_row) -> int | None:
     (out_dir / "durations.json").write_text(json.dumps(durations))
     scenes = script.to_scenes(spec, durations)
 
+    # -shortest cuts the voice to the length of the video, so a scene budget
+    # the narration overran means the end of the script is simply gone. The
+    # checks in script.py are meant to prevent this before the voice is even
+    # generated; this is the backstop for when the length estimate is wrong,
+    # and it refuses rather than shipping a video that stops mid-sentence.
+    lost = script.truncation_seconds(scenes, durations)
+    if lost > 0.25:
+        raise RuntimeError(
+            f"the narration is {sum(durations):.1f}s but the scenes only hold "
+            f"{sum(sc.duration for sc in scenes):.1f}s, so {lost:.1f}s of "
+            f"voiceover would be cut and the video would end mid-sentence.\n"
+            f"  Re-roll the script — the length checks should catch this "
+            f"before the voice is generated — or raise the budget for the "
+            f"long scene in script.SCENE_BUDGET.")
+
     video_path = out_dir / f"{slug}.mp4"
     poster_path = out_dir / f"{slug}.jpg"
     R.render(scenes, str(audio), str(video_path))
@@ -95,15 +110,28 @@ def run(n: int | None = None) -> list[int]:
     #
     # So the quota does NOT get topped up. Fewer drafts beats hollow ones.
     covered = [r for r in candidates if facts_for(r["query"])]
+    uncovered = [r["query"] for r in candidates if not facts_for(r["query"])]
     topics = covered[:n]
 
-    skipped = len(candidates) - len(covered)
     if topics:
         print(f"{len(covered)} of {len(candidates)} queued topics have data in "
               f"cars.csv; building {len(topics)}.")
         if len(topics) < n:
             print(f"    ({n - len(topics)} fewer than the nightly target — the "
                   f"rest have no supporting data and were left queued.)")
+    # A count was all this printed, which told you a number and gave you
+    # nothing to do with it. The queue holds 1,491 phrases; knowing that 38 of
+    # the top 50 have no data does not tell you WHICH, and the ones worth
+    # acting on are always at the top. Naming them turns a statistic into a
+    # list of rows to add.
+    if uncovered:
+        print(f"\n  No data for {len(uncovered)}, highest-demand first:")
+        for q in uncovered[:8]:
+            print(f"    · {q}")
+        if len(uncovered) > 8:
+            print(f"    … and {len(uncovered) - 8} more")
+        print(f"  Why one of them matched nothing:\n"
+              f"    python -m autoedits.cars --why {uncovered[0]!r}")
     else:
         print(f"None of the top {len(candidates)} queued topics have data in "
               f"cars.csv, so nothing was built — a script with no figures is "
@@ -167,6 +195,21 @@ def from_spec(slug: str, engine: str | None = None) -> int | None:
     audio, durations = voice.narrate(script.narrations(spec), slug, engine)
     (d / "durations.json").write_text(json.dumps(durations))
     scenes = script.to_scenes(spec, durations)
+
+    # -shortest cuts the voice to the length of the video, so a scene budget
+    # the narration overran means the end of the script is simply gone. The
+    # checks in script.py are meant to prevent this before the voice is even
+    # generated; this is the backstop for when the length estimate is wrong,
+    # and it refuses rather than shipping a video that stops mid-sentence.
+    lost = script.truncation_seconds(scenes, durations)
+    if lost > 0.25:
+        raise RuntimeError(
+            f"the narration is {sum(durations):.1f}s but the scenes only hold "
+            f"{sum(sc.duration for sc in scenes):.1f}s, so {lost:.1f}s of "
+            f"voiceover would be cut and the video would end mid-sentence.\n"
+            f"  Re-roll the script — the length checks should catch this "
+            f"before the voice is generated — or raise the budget for the "
+            f"long scene in script.SCENE_BUDGET.")
 
     video_path, poster_path = d / f"{slug}.mp4", d / f"{slug}.jpg"
     R.render(scenes, str(audio), str(video_path))

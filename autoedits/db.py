@@ -181,17 +181,100 @@ def next_topics(n: int) -> list[sqlite3.Row]:
         subj = cand_subj[r["id"]]
         if not subj:
             continue
-        if any(_similarity(subj, h, idf) >= SAME_TOPIC for h in hist_subj):
-            continue
-        if any(_similarity(subj, h, idf) >= TOO_SOON for h in recent):
-            continue
-        # And no two in the same batch, or three nights of insurance becomes
-        # one night of three insurance videos.
-        if any(_similarity(subj, q, idf) >= TOO_SOON for q in picked_subj):
-            continue
+        # A topic you typed by hand skips all three guards. They exist to stop
+        # autocomplete's near-misses becoming four insurance videos in a row,
+        # which is a judgement the harvester cannot make and you already have.
+        #
+        # They were also wrong often enough to be unusable for hand-added
+        # topics. _similarity divides by min(wa, wb), so a SHORT new phrase is
+        # blocked by any longer title sharing most of its words:
+        # "land cruiser fj uae price" scored 0.6 against "Land Cruiser GR
+        # Sport price vs Prado and Hybrid in UAE" on {land, cruiser, price}
+        # alone — and `fj`, the one word that makes it a different car, is
+        # what got outvoted.
+        if r["source"] != "added":
+            if any(_similarity(subj, h, idf) >= SAME_TOPIC for h in hist_subj):
+                continue
+            if any(_similarity(subj, h, idf) >= TOO_SOON for h in recent):
+                continue
+            # And no two in the same batch, or three nights of insurance
+            # becomes one night of three insurance videos.
+            if any(_similarity(subj, q, idf) >= TOO_SOON for q in picked_subj):
+                continue
         picked.append(r)
         picked_subj.append(subj)
     return picked
+
+
+def why_blocked(query: str) -> str | None:
+    """None if next_topics() would consider this phrase, else the reason.
+
+    Four things can stop a topic reaching a render, and until this existed
+    only the first announced itself. The other three are quiet by design —
+    they exist to stop the channel making the same video four nights running
+    — so a phrase you add by hand and never see again looks identical to a
+    phrase the queue simply has not reached yet.
+
+    The guards are applied in the same order and at the same thresholds as
+    next_topics(), from the same helpers, so this cannot drift away from the
+    behaviour it describes.
+    """
+    q = query.strip().lower()
+    with conn() as c:
+        row = c.execute("SELECT used_at, source FROM topics WHERE query=?",
+                        (q,)).fetchone()
+        history = [r["title"] for r in c.execute(
+            "SELECT title FROM videos ORDER BY id DESC").fetchall()]
+        queued = [r["query"] for r in c.execute(
+            "SELECT query FROM topics WHERE used_at IS NULL AND query<>? "
+            "ORDER BY score DESC LIMIT 400", (q,)).fetchall()]
+
+    if row is None:
+        return "not in the queue at all — add it first"
+    if row["used_at"]:
+        return f"already used, on {row['used_at'][:10]}"
+
+    subj = _subject(q)
+    if not subj:
+        return ("every word in it is a stopword, so it has no subject to "
+                "match rows on")
+
+    hist_subj = [_subject(t) for t in history]
+    idf = _idf(hist_subj + [_subject(x) for x in queued] + [subj])
+
+    # Mirrors the exemption in next_topics(): nothing blocks a topic you
+    # asked for by name. near_misses() is what reports the overlap instead.
+    if row["source"] == "added":
+        return None
+
+    for title, hs in zip(history, hist_subj):
+        if _similarity(subj, hs, idf) >= SAME_TOPIC:
+            return f"too close to a video you already made: {title!r}"
+    for title, hs in zip(history[:COOLDOWN], hist_subj[:COOLDOWN]):
+        if _similarity(subj, hs, idf) >= TOO_SOON:
+            return (f"same subject as a recent video, {title!r} — it clears "
+                    f"the cooldown after {COOLDOWN} more drafts")
+    return None
+
+
+def near_misses(query: str, limit: int = 3) -> list[tuple[float, str]]:
+    """Videos already made that share this phrase's subject, worst first.
+
+    Advice rather than a verdict. A hand-added topic is built whatever this
+    returns, so the point is to let you see the overlap before the render
+    rather than after it.
+    """
+    subj = _subject(query)
+    if not subj:
+        return []
+    with conn() as c:
+        history = [r["title"] for r in c.execute(
+            "SELECT title FROM videos ORDER BY id DESC").fetchall()]
+    hist_subj = [_subject(t) for t in history]
+    idf = _idf(hist_subj + [subj])
+    scored = [(_similarity(subj, h, idf), t)
+              for t, h in zip(history, hist_subj)]
+    return sorted((s for s in scored if s[0] >= TOO_SOON), reverse=True)[:limit]
 
 
 def mark_topic_used(topic_id: int) -> None:
