@@ -88,3 +88,27 @@ cheapest 7 seater suv in uae
 cheapest suv in dubai
 cheapest electric car in uae
 best first car in uae
+
+# --- motorcycles ------------------------------------ bikes.csv, bike_rules.csv
+# One of these is built each night in the reserved bike slot (config.yaml,
+# pipeline.bike_slots_per_night), so their order among the car lines above
+# does not matter — only their order among themselves. Licence and law first:
+# those answers hold for years. Prices last: they age with the model year.
+motorcycle licence age in uae
+how to get a motorcycle licence in dubai
+motorcycle licence cost in dubai
+motorcycle helmet fine in uae
+delivery bike lane rules in dubai
+motorcycle insurance cost in uae
+motorcycle registration fee in dubai
+riding a motorcycle without insurance fine uae
+motorcycle loud exhaust fine in uae
+motorcycle red light fine in uae
+quad bike on the road fine in uae
+cheapest motorcycle in uae
+sharmax motorcycle prices in uae
+ducati prices in uae
+honda motorcycle prices in uae
+royal enfield prices in uae
+cfmoto prices in uae
+cheapest scooter in dubai

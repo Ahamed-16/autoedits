@@ -116,19 +116,57 @@ COOLDOWN = 10            # how many recent videos the cooldown looks back over
 
 
 def _subject(text: str) -> set[str]:
-    """The words in a phrase that actually carry its subject."""
-    from .cars import _tokens, STOPWORDS          # late: avoids an import cycle
-    return _tokens(text) - STOPWORDS
+    """The words in a phrase that actually carry its subject.
+
+    "motorcycle" is a stopword for retrieval — it is in nearly every bike
+    rule and ranks nothing — but for dedupe it is the whole difference.
+    Stripped, "motorcycle licence age in uae" became {licence, age} and was
+    refused as a repeat of "How to Check Black Points on License in Dubai".
+    So every motorcycle phrase carries one marker, however it was worded:
+    "bike licence" and "motorbike licence" still match each other, and
+    neither matches a car video.
+    """
+    from .cars import _tokens, STOPWORDS, is_bike_query   # late: import cycle
+    subj = _tokens(text) - STOPWORDS
+    return subj | {"motorcycle"} if is_bike_query(text) else subj
 
 
 def _similarity(a: set[str], b: set[str], idf: dict[str, float]) -> float:
+    """How much of the smaller subject the larger one already covers.
+
+    Dividing by the SHORTER subject is deliberate: it catches a rephrasing.
+    "black points uae" sits entirely inside "How to Check Black Points in
+    UAE", scores 1.00, and is correctly refused as the same video twice.
+
+    But when the shorter subject is a single word, containment is automatic
+    and means nothing. "cheapest cars in uae" reduces to {cheapest} once the
+    stopwords go, and scored a perfect 1.00 against "Toyota GR prices in UAE
+    - which one is cheapest" purely because that title happens to contain the
+    word. They are not the same video.
+
+    That is not a rare edge: short generic phrases are most of what
+    autocomplete harvests, and every video published adds more words that can
+    swallow one. At 120 videos it blocked 305 of the top 400 queued topics,
+    and the nightly run went two days building nothing while 1,186 topics
+    with data sat behind the guard.
+
+    So a one-word subject has to clear the LARGER bar instead — it can still
+    block, but only against something nearly as short and as specific.
+
+    A motorcycle subject and a car subject are never the same video, however
+    many words they share. Containment made "Car insurance cost in UAE" sit
+    wholly inside "motorcycle insurance cost in uae" and score 1.00.
+    """
+    if ("motorcycle" in a) != ("motorcycle" in b):
+        return 0.0
     inter = a & b
     if not inter:
         return 0.0
     wi = sum(idf.get(w, 1.0) for w in inter)
     wa = sum(idf.get(w, 1.0) for w in a) or 1.0
     wb = sum(idf.get(w, 1.0) for w in b) or 1.0
-    return wi / min(wa, wb)
+    denom = min(wa, wb) if min(len(a), len(b)) >= 2 else max(wa, wb)
+    return wi / denom
 
 
 def _idf(docs: list[set[str]]) -> dict[str, float]:
@@ -141,7 +179,7 @@ def _idf(docs: list[set[str]]) -> dict[str, float]:
     return {w: math.log(1 + n / (1 + c)) for w, c in df.items()}
 
 
-def next_topics(n: int) -> list[sqlite3.Row]:
+def next_topics(n: int, match=None) -> list[sqlite3.Row]:
     """Highest-scoring topics that are not a repeat of something already made.
 
     `used_at IS NULL` was the only guard, and it compares whole strings. But
@@ -157,11 +195,17 @@ def next_topics(n: int) -> list[sqlite3.Row]:
 
     The second is what actually breaks the clustering. Insurance topics do not
     stop being made; they stop being made four nights running.
+
+    `match`, when given, is a predicate on the query text that a topic must
+    pass BEFORE the 400-row window is cut. The bike slot needs it: motorcycle
+    topics are a few dozen rows in a queue of 1,500 car phrases, and would
+    otherwise never reach the top 400 to be considered at all.
     """
     with conn() as c:
-        cands = c.execute(
+        rows = c.execute(
             "SELECT * FROM topics WHERE used_at IS NULL "
-            "ORDER BY score DESC, demand DESC LIMIT 400").fetchall()
+            "ORDER BY score DESC, demand DESC").fetchall()
+        cands = [r for r in rows if match is None or match(r["query"])][:400]
         history = [r["title"] for r in c.execute(
             "SELECT title FROM videos ORDER BY id DESC").fetchall()]
 

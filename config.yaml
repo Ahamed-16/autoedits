@@ -11,6 +11,9 @@ channel:
 
 pipeline:
   drafts_per_night: 3         # 3 good ones beat 20 generated ones
+  bike_slots_per_night: 1     # of those 3, one is a motorcycle topic when
+                              # bikes.csv / bike_rules.csv can back one;
+                              # otherwise the slot goes back to a car topic
   require_sources: true       # bin a script rather than publish an invented number
 
 
@@ -144,6 +147,21 @@ topics:
     - byd uae
     - jetour uae
     - hyundai tucson uae
+
+    # Motorcycles — one reserved slot a night (pipeline.bike_slots_per_night).
+    # data/bikes.csv and data/bike_rules.csv back these. Brands with no
+    # published UAE prices (Yamaha, Kawasaki, KTM, BMW, Harley...) are left
+    # out on purpose: they would harvest topics nothing can answer.
+    - motorcycle licence dubai
+    - motorbike licence uae
+    - motorcycle price in uae
+    - cheapest motorcycle in uae
+    - scooter price in dubai
+    - motorcycle insurance uae
+    - delivery bike dubai
+    - sharmax uae
+    - ducati uae
+    - royal enfield uae
 
   # A phrase must contain one of these to enter the queue. This region anchor
   # is the whole strategic point: a generic "RAV4 review" competes with the

@@ -283,6 +283,13 @@ UNITS = {
     "degrees": ("", "\u00b0C"),
     "mm":      ("", "mm"),
     "psi":     ("", " PSI"),
+    # bike_rules.csv
+    "lanes":   ("", " lanes"),
+    "lane":    ("", " lane"),
+    "hours":   ("", " hours"),
+    "lectures": ("", " lectures"),
+    "km/h":    ("", " km/h"),
+    "black points": ("", " points"),
     "none":    ("", ""),
 }
 
@@ -297,7 +304,7 @@ def _names_cars(rows: list[dict]) -> bool:
     from . import cars
 
     brands = {(r.get("brand") or "").strip().lower()
-              for r in cars.load()} - {""}
+              for r in cars.load() + cars.load_bikes()} - {""}
     hits = 0
     for row in rows:
         name = str(row.get("name", "")).lower()
@@ -338,7 +345,7 @@ MIN_COMPLETION = 2200      # a full script measured 2130; below this is futile
 
 
 def _fit_completion(prompt: str, want: int | None = None,
-                    floor: int | None = None) -> int:
+                    floor: int | None = None, system: str | None = None) -> int:
     """How many completion tokens we may reserve without a 413.
 
     max_completion_tokens is not a free ceiling: Groq charges it against
@@ -353,7 +360,8 @@ def _fit_completion(prompt: str, want: int | None = None,
     row: not too fast, just a reservation eleven times the size of the
     answer.
     """
-    est = int((len(SYSTEM) + len(prompt)) / 4 * TOKEN_FUDGE)
+    est = int((len(system if system is not None else SYSTEM) + len(prompt))
+              / 4 * TOKEN_FUDGE)
     room = GROQ_TPM - TPM_RESERVE - est
     if want is not None:
         return max(1, min(want, room))
@@ -372,7 +380,7 @@ def _fit_completion(prompt: str, want: int | None = None,
 
 
 def _groq_json(prompt: str, schema: dict, schema_name: str,
-               want: int | None = None) -> str:
+               want: int | None = None, system: str | None = None) -> str:
     """Free-tier Groq. Uses strict structured outputs, so the schema is
     enforced by constrained decoding exactly as Ollama's grammar is — the
     model cannot return a script with a field missing.
@@ -381,13 +389,20 @@ def _groq_json(prompt: str, schema: dict, schema_name: str,
     means "you went too fast", not "you ran out". Wait and retry.
     """
     require(GROQ_KEY, "GROQ_API_KEY")
+    # SYSTEM is the script-WRITING brief: scene types, the schema, sourcing
+    # rules. A call that does not write a script has no use for it, and
+    # sending it anyway cost 2,602 tokens of an 8,000-per-minute budget on
+    # every repair — which is what left the repair with 900 completion
+    # tokens, too few for this model to finish a valid JSON document, and
+    # what produced the 429s before it.
+    system = SYSTEM if system is None else system
     body = {
         "model": GROQ_MODEL,
-        "messages": [{"role": "system", "content": SYSTEM},
+        "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": prompt}],
         # Lower than default: structure beats flair here.
         "temperature": 0.6,
-        "max_completion_tokens": _fit_completion(prompt, want),
+        "max_completion_tokens": _fit_completion(prompt, want, system=system),
         "response_format": {"type": "json_schema",
                             "json_schema": {"name": schema_name,
                                             "strict": True,
@@ -444,7 +459,7 @@ def _groq_json(prompt: str, schema: dict, schema_name: str,
             raise RuntimeError(
                 f"Groq returned HTTP {r.status_code} for model {GROQ_MODEL}.\n"
                 f"  {detail or r.text[:600]}\n"
-                f"  prompt was {len(SYSTEM) + len(prompt)} chars "
+                f"  prompt was {len(system) + len(prompt)} chars "
                 f"(~{(len(SYSTEM) + len(prompt)) // 4} tokens), "
                 f"max_completion_tokens={body['max_completion_tokens']}")
 
@@ -699,12 +714,118 @@ def _extract_json(raw: str) -> dict:
 
 # ----------------------------------------------------------------- generate --
 
+# Everything this call needs, and nothing about writing a script. The one
+# rule carried over from SYSTEM is the abbreviation rule, because unspeakable()
+# still checks repaired lines and a rewrite that reintroduces "AED" fails it.
+REPAIR_SYSTEM = (
+    "You rewrite voiceover lines for a short video. You return only JSON "
+    "matching the schema you are given, with no commentary.\n"
+    "The lines are read aloud by a speech engine, so spell abbreviations out: "
+    "\"dirhams\", never \"AED\"; \"per cent\", never \"%\"; \"kilometres\", never "
+    "\"km\"; \"horsepower\", never \"hp\".\n"
+    "You never introduce a number that you were not given."
+)
+
 REPAIR_SCHEMA = _strict({
     "type": "object",
     "properties": {"narrations": {"type": "array",
                                   "items": {"type": "string"}}},
     "required": ["narrations"],
 })
+
+
+_SUPERLATIVE = re.compile(
+    r"(?i)\b(cheapest|least expensive|most affordable|lowest[- ]priced|"
+    r"lowest (?:entry )?price)\b")
+# What the title's category words mean in the data's own vocabulary.
+_CATEGORY_ALIAS = {"ev": "electric", "evs": "electric", "suvs": "suv",
+                   "hybrids": "hybrid", "sedans": "sedan", "pickups": "pickup",
+                   "hatchbacks": "hatchback", "superbike": "sport",
+                   "tourer": "touring", "retro": "classic", "adv": "adventure",
+                   "dirt": "off", "offroad": "off", "enduro": "off",
+                   "motocross": "off"}
+
+
+def false_superlative(spec: dict) -> list[str]:
+    """"The cheapest X" has to BE the cheapest X — in the whole file.
+
+    The writer can only see the twelve rows retrieval hands it, and it calls
+    the cheapest of those "the cheapest in Dubai". Two drafts on one night
+    named two different cheapest electric cars, 74,900 and 109,900, because
+    they were handed two different twelve — and the second was false by this
+    project's own data, with seven EVs below it. The check reads the claim
+    against every usable row, not against what the writer happened to see.
+
+    Scoped to market-wide claims. A title naming a brand ("Toyota GR prices -
+    which one is cheapest") is a claim about that brand's own range, which
+    retrieval does fetch in full, so it is left alone.
+    """
+    from .cars import (load, load_bikes, usable, _tokens, _phrase_in,
+                       CATEGORY_WORDS, BIKE_CATEGORY_WORDS, is_bike_query,
+                       wants_offroad, road_bike)
+
+    scenes = spec.get("scenes") or []
+    title = spec.get("title") or ""
+    texts = [title] + [f"{sc.get('label', '')} {sc.get('narration', '')}"
+                       for sc in scenes]
+    if not any(_SUPERLATIVE.search(t) for t in texts):
+        return []
+
+    # A motorcycle title is checked against motorcycles. "The cheapest
+    # motorbike in the UAE" at 4,990 must not fail because cars.csv has
+    # nothing under 35,000 — nor pass because it does.
+    bike = is_bike_query(title)
+    rows = load_bikes() if bike else load()
+    if bike and not wants_offroad(title):
+        rows = [r for r in rows if road_bike(r)]
+    words = CATEGORY_WORDS | BIKE_CATEGORY_WORDS if bike else CATEGORY_WORDS
+    lowered = title.lower()
+    if any(_phrase_in(lowered, r["brand"].lower()) for r in rows if r.get("brand")):
+        return []
+
+    want = {_CATEGORY_ALIAS.get(w, w) for w in _tokens(title) & words}
+
+    # The figure the script presents as the cheapest: its stat, or failing
+    # that the lowest bar in its comparison.
+    anchor, claimed = None, None
+    for sc in scenes:
+        if sc.get("type") == "stat" and sc.get("value") is not None:
+            anchor, claimed = sc, float(sc["value"])
+            break
+    if claimed is None:
+        for sc in scenes:
+            vals = [float(r["value"]) for r in sc.get("rows") or []
+                    if r.get("value") is not None]
+            if sc.get("type") == "compare" and vals:
+                anchor, claimed = sc, min(vals)
+                break
+    if claimed is None:
+        return []
+
+    pool = []
+    for r in rows:
+        if not usable(r) or not r.get("price_from_aed"):
+            continue
+        kinds = _tokens(r.get("segment", ""), r.get("powertrain", ""))
+        if want <= kinds:
+            pool.append(r)
+    if not pool:
+        return []
+    cheaper = sorted((r for r in pool if int(r["price_from_aed"]) < claimed),
+                     key=lambda r: int(r["price_from_aed"]))
+    if not cheaper:
+        return []
+
+    best = cheaper[0]
+    noun = "motorcycle" if bike else "car"
+    what = " ".join(sorted(want)) + f" {noun}" if want else noun
+    return [f"{_norm(anchor.get('narration') or title)}   -> calls "
+            f"{int(claimed):,} the cheapest {what}, but this project's data has "
+            f"the {best['brand']} {best['model']} at "
+            f"{int(best['price_from_aed']):,}"
+            + (f" and {len(cheaper) - 1} more below {int(claimed):,}"
+               if len(cheaper) > 1 else "")
+            + ". Either drop 'cheapest' or use the real cheapest"]
 
 
 def scenes_of(spec: dict) -> list[dict]:
@@ -722,7 +843,7 @@ def _narration_faults(spec: dict, facts: str = "") -> list[str]:
             + misquotes_a_figure(spec) + spells_out_a_price(spec)
             + invents_a_figure(spec, facts)
             + compare_says_nothing(spec) + bullets_say_nothing(spec, facts)
-            + too_long_to_speak(spec))
+            + too_long_to_speak(spec) + false_superlative(spec))
 
 
 # How much of a complaint string to match a narration against. The checks
@@ -837,9 +958,13 @@ def rewrite_narration(spec: dict, bad: list[str] | None = None,
         "GOOD:  The cheapest Jetour starts at 69,500 dirhams before fees.\n\n"
         + "\n".join(lines))
 
-    # Six one-sentence lines, not a script. Reserving a full script's budget
-    # on top of the generate call that just ran is what triggered the 429s.
-    raw = _groq_json(prompt, REPAIR_SCHEMA, "narration_repair", want=900)
+    # Six one-sentence lines, not a script — but this model spends
+    # completion tokens reasoning before it answers, so the budget has to
+    # cover that too. 900 did not: two of three topics in one night died on
+    # "max completion tokens reached before generating a valid document".
+    # The room comes from not shipping SYSTEM with a call that cannot use it.
+    raw = _groq_json(prompt, REPAIR_SCHEMA, "narration_repair",
+                     want=2200, system=REPAIR_SYSTEM)
     out = _extract_json(raw).get("narrations") or []
     if len(out) != len(scenes):
         raise RuntimeError(
@@ -869,7 +994,16 @@ def generate(query: str, facts: str = "", writer: str | None = None) -> dict:
             f"models.writer is {name!r}; must be one of "
             f"{', '.join(sorted(WRITERS))}. Set it in config.yaml.")
 
+    from .cars import is_bike_query
+    # SYSTEM is written for cars and is near its token budget, so the bike
+    # brief rides in the user turn, only on the nights that need it.
+    bike_brief = (
+        "This video is about MOTORCYCLES in the UAE, not cars. Every price "
+        "below is a motorcycle or scooter. Say motorcycle, bike or scooter, "
+        "never car. Speeds in narration are \"kilometres an hour\".\n\n"
+        if is_bike_query(query) else "")
     prompt = (
+        f"{bike_brief}"
         f"Search query to answer: \"{query}\"\n\n"
         f"{'Verified facts you may use (prefer these over anything else):' if facts else ''}\n"
         f"{facts}\n\n"
@@ -1425,6 +1559,9 @@ _UNSPEAKABLE = (
     (re.compile(r"%"), 'say "per cent"'),
     (re.compile(r"\bkm/l\b", re.I), 'say "kilometres per litre"'),
     (re.compile(r"\bhp\b"), 'say "horsepower"'),
+    # Motorcycle rules and specs. "100 km/h" is read "kay-em slash aitch".
+    (re.compile(r"\bkm/h\b|\bkmh\b|\bkph\b", re.I), 'say "kilometres an hour"'),
+    (re.compile(r"\d\s*cc\b", re.I), 'write the engine size as "150 C C"'),
 )
 
 

@@ -261,8 +261,22 @@ def _speak_checked(engine, text: str, out_path: Path) -> Path:
         if attempt < RETRIES:
             print(f"    clip was {got:.1f}s for ~{expected:.1f}s of text "
                   f"— regenerating ({attempt + 1}/{RETRIES})")
-    print(f"    ! still short after {RETRIES} retries: {text[:60]!r}")
-    return out_path
+
+    # This used to print a warning and hand back the short clip, which is the
+    # one thing it must not do. A clip this far under length is one with
+    # WORDS MISSING — the engine emitted an end-of-speech token partway
+    # through — so returning it ships a video whose voiceover states half a
+    # price and sounds completely fluent doing it. There is nothing
+    # downstream that can notice.
+    #
+    # pipeline.run() catches this and moves to the next topic, so a bad night
+    # for the synthesiser costs one draft rather than the batch.
+    raise RuntimeError(
+        f"the voice engine kept cutting this line short — {got:.1f}s of "
+        f"audio for about {expected:.1f}s of words, after {RETRIES} retries. "
+        f"The clip is missing part of the sentence, so the draft is not safe "
+        f"to build:\n    {text[:120]!r}\n"
+        f"  Re-run to roll again, or shorten the line in the spec.")
 
 
 def say(text: str, out_path: Path, engine_name: str | None = None) -> Path:

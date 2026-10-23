@@ -53,7 +53,7 @@ def test_repair_prompt_never_demonstrates_a_spelled_price():
                         "narration": "The FJ starts at 139,900 dirhams."}]}
     seen = {}
 
-    def capture(prompt, schema, name, want=None):
+    def capture(prompt, schema, name, want=None, system=None):
         seen["prompt"] = prompt
         return json.dumps({"narrations": ["The FJ starts at 139,900 dirhams."]})
 
@@ -94,7 +94,7 @@ def test_unmapped_complaint_does_not_label_lines_ok():
                        {"type": "stat", "narration": "Another line."}]}
     seen = {}
 
-    def capture(prompt, schema, name, want=None):
+    def capture(prompt, schema, name, want=None, system=None):
         seen["prompt"] = prompt
         return json.dumps({"narrations": ["A line.", "Another line."]})
 
@@ -373,12 +373,143 @@ def test_every_scene_type_has_a_budget():
         "required to state")
 
 
-def test_repair_reservation_is_small():
-    """The repair returns six sentences, not a script."""
+def test_a_persistently_short_clip_is_refused_not_shipped():
+    """A clip far under length has WORDS MISSING and sounds fluent anyway.
+
+    This used to print a warning and hand the clip back, and nothing
+    downstream could notice half a price had gone missing.
+    """
+    from autoedits import voice as V
+    calls = {"n": 0}
+
+    def always_short(text, out_path):
+        calls["n"] += 1
+
+    real_dur, V.duration = V.duration, lambda p: 0.1
+    try:
+        raised = None
+        try:
+            V._speak_checked(always_short, "a line with many spoken words here",
+                             __import__("pathlib").Path("/tmp/x.mp3"))
+        except RuntimeError as exc:
+            raised = exc
+        assert raised is not None, "a short clip was returned instead of refused"
+        assert "missing part of the sentence" in str(raised), str(raised)
+        assert calls["n"] == V.RETRIES + 1, (
+            f"gave up after {calls['n']} attempts, expected {V.RETRIES + 1}")
+    finally:
+        V.duration = real_dur
+
+
+def test_a_clip_of_the_right_length_is_accepted():
+    from autoedits import voice as V
+    real_dur, V.duration = V.duration, lambda p: 99.0
+    try:
+        out = V._speak_checked(lambda t, p: None, "some words",
+                               __import__("pathlib").Path("/tmp/x.mp3"))
+        assert out is not None
+    finally:
+        V.duration = real_dur
+
+
+# Two drafts on one night named two different "cheapest electric cars",
+# 74,900 and 109,900, because they were handed two different sets of rows.
+# The second was false by this project's own data.
+def test_a_false_cheapest_claim_is_caught():
+    spec = {"title": "Cheapest electric car in Dubai 2026", "scenes": [
+        {"type": "stat", "label": "Base price of cheapest electric SUV",
+         "value": 109900,
+         "narration": "The Chevrolet Captiva EV starts at 109,900 dirhams."}]}
+    faults = S.false_superlative(spec)
+    assert faults, "a 109,900 'cheapest EV' passed with cheaper EVs on file"
+    assert "cheapest electric car" in faults[0], faults[0]
+
+
+def test_a_true_cheapest_claim_passes():
+    from autoedits.cars import load, usable
+    ev = min((r for r in load() if usable(r) and r["price_from_aed"]
+              and "electric" in r["powertrain"].lower()),
+             key=lambda r: int(r["price_from_aed"]))
+    spec = {"title": "Cheapest electric car in Dubai 2026", "scenes": [
+        {"type": "stat", "label": "Cheapest EV", "value": int(ev["price_from_aed"]),
+         "narration": f"The {ev['model']} starts at {ev['price_from_aed']} dirhams."}]}
+    assert not S.false_superlative(spec), S.false_superlative(spec)
+
+
+def test_a_cheapest_claim_inside_a_named_brand_is_left_alone():
+    """'Toyota GR prices - which one is cheapest' is about Toyota's range,
+    which retrieval fetches in full. It must not be judged against every car."""
+    spec = {"title": "Toyota GR prices in UAE - which one is cheapest", "scenes": [
+        {"type": "stat", "label": "Cheapest GR", "value": 162900,
+         "narration": "The GR 86 is the cheapest at 162,900 dirhams."}]}
+    assert not S.false_superlative(spec), S.false_superlative(spec)
+
+
+def test_a_withheld_row_cannot_be_the_cheapest():
+    """The Qin Plus EV is marked CONFLICT. usable() must keep it out of
+    retrieval, and therefore out of the superlative check's pool."""
+    from autoedits.cars import load, usable
+    rows = [r for r in load() if r["model"] == "Qin Plus EV"]
+    assert rows and not usable(rows[0]), "the contradicted Qin Plus row is still usable"
+
+
+def test_a_call_can_reserve_what_it_asks_for():
     assert S._fit_completion("x" * 4000, want=900) == 900
     # And it still shrinks rather than 413 when the prompt is enormous.
     huge = S._fit_completion("x" * (S.GROQ_TPM * 4), want=900)
     assert huge < 900, f"a huge prompt should shrink the reservation, got {huge}"
+
+
+def _capture_repair():
+    """Run a repair with the network stubbed, returning what it would send."""
+    spec = {"scenes": [{"type": "stat", "value": 139900, "prefix": "AED",
+                        "narration": "The FJ starts at 139,900 dirhams."}]}
+    seen = {}
+
+    def capture(prompt, schema, name, want=None, system=None):
+        seen.update(prompt=prompt, want=want, system=system)
+        return json.dumps({"narrations": ["The FJ starts at 139,900 dirhams."]})
+
+    real, S._groq_json = S._groq_json, capture
+    try:
+        S.rewrite_narration(spec, [], "AED 139,900")
+    finally:
+        S._groq_json = real
+    return seen
+
+
+def test_the_repair_does_not_ship_the_writing_brief():
+    """SYSTEM is the brief for WRITING a script, useless to a rewrite.
+
+    Sending it anyway spent 2,602 tokens of an 8,000-per-minute budget on
+    every repair call, which is what left only 900 for the answer.
+    """
+    seen = _capture_repair()
+    assert seen["system"] is not None, "the repair fell back to SYSTEM"
+    assert seen["system"] != S.SYSTEM
+    assert len(seen["system"]) < len(S.SYSTEM) / 4, (
+        f"the repair brief is {len(seen['system'])} chars against SYSTEM's "
+        f"{len(S.SYSTEM)}; it should be a fraction of it")
+
+
+def test_the_repair_budget_can_finish_a_document():
+    """900 did not. The model reasons before it answers, and two of three
+    topics in one night died on 'max completion tokens reached before
+    generating a valid document'."""
+    seen = _capture_repair()
+    assert seen["want"] >= 1800, (
+        f"the repair asked for only {seen['want']} completion tokens")
+    budget = S._fit_completion(seen["prompt"], seen["want"],
+                               system=seen["system"])
+    assert budget == seen["want"], (
+        f"the prompt crushed the reservation to {budget}")
+
+
+def test_the_repair_brief_keeps_the_abbreviation_rule():
+    """unspeakable() checks repaired lines too, so a rewrite that
+    reintroduces "AED" fails. That rule lived only in SYSTEM."""
+    sysmsg = _capture_repair()["system"]
+    assert "dirhams" in sysmsg and "AED" in sysmsg, sysmsg
 
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ INSURANCE_PATH = ROOT / "data" / "insurance.csv"
 OWNERSHIP_PATH = ROOT / "data" / "ownership.csv"
 RULES_PATH = ROOT / "data" / "rules.csv"
 HEAT_PATH = ROOT / "data" / "heat.csv"
+BIKES_PATH = ROOT / "data" / "bikes.csv"
+BIKE_RULES_PATH = ROOT / "data" / "bike_rules.csv"
 
 # Cost and rule tables, in the order they should be considered. Everything
 # here shares one schema (category, item, value_from, value_to, unit, basis)
@@ -52,7 +54,34 @@ def load() -> list[dict]:
         return [r for r in csv.DictReader(fh) if r.get("model")]
 
 
-def load_facts() -> list[dict]:
+def load_bikes() -> list[dict]:
+    """Motorcycle prices. Same price columns as cars.csv, plus engine_cc.
+
+    Kept in their own file and their own retrieval pool. A car query handed a
+    Sharmax at 4,990 would call it "the cheapest car in the UAE"; a bike query
+    handed a Kia would read a car price out as a motorcycle's. Neither file
+    ever answers the other's questions.
+    """
+    if not BIKES_PATH.exists():
+        return []
+    with open(BIKES_PATH, newline="", encoding="utf-8") as fh:
+        return [r for r in csv.DictReader(fh) if r.get("model")]
+
+
+def _read_facts(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with open(path, newline="", encoding="utf-8") as fh:
+        return [r for r in csv.DictReader(fh) if r.get("item")]
+
+
+# Car-file rows a motorcycle question may also use: fuel costs the same per
+# litre whatever burns it. Everything else shared is picked up by the word
+# "motorcycle" in the row (the TPL bands, the 200 AED registration fee).
+BIKE_SHARED_CATEGORIES = {"Fuel price"}
+
+
+def load_facts(pool: str = "car") -> list[dict]:
     """Costs and rules, which don't fit the brand/model shape at all.
 
     Three files, one schema:
@@ -68,16 +97,27 @@ def load_facts() -> list[dict]:
     AED 200,000" has been true since 2016 and will be true next year. Content
     built on it does not rot, which is the whole point of keeping it separate
     from the price files.
+
+    `pool` picks the audience: "car" (the four files above), "bike"
+    (bike_rules.csv plus the car-file rows that are about motorcycles), or
+    "all" for audits and citation tracing.
     """
     rows = []
     for path in FACT_PATHS:
-        if path.exists():
-            with open(path, newline="", encoding="utf-8") as fh:
-                rows += [r for r in csv.DictReader(fh) if r.get("item")]
-    return rows
+        rows += _read_facts(path)
+    if pool == "car":
+        return rows
+    bike = _read_facts(BIKE_RULES_PATH)
+    if pool == "all":
+        return rows + bike
+    shared = [r for r in rows
+              if "motorcycle" in " ".join((r.get("category", ""), r.get("item", ""),
+                                           r.get("basis", ""), r.get("notes", ""))).lower()
+              or r.get("category", "") in BIKE_SHARED_CATEGORIES]
+    return bike + shared
 
 
-def usable_facts() -> list[dict]:
+def usable_facts(pool: str = "car") -> list[dict]:
     """load_facts() minus the legal claims nothing official stands behind.
 
     This is the gate. A tyre-age limit sourced to a newspaper is not evidence
@@ -91,7 +131,7 @@ def usable_facts() -> list[dict]:
     from .sources import LAW_CATEGORIES, ACCEPTABLE_FOR_LAW, tier_of
 
     keep = []
-    for r in load_facts():
+    for r in load_facts(pool):
         if (r.get("category") or "").strip() in LAW_CATEGORIES \
                 and tier_of(r.get("source_url", "")) not in ACCEPTABLE_FOR_LAW:
             continue
@@ -113,7 +153,8 @@ def _money(x: str) -> str:
         f = float(x)
     except (TypeError, ValueError):
         return ""
-    return f"{f:,.2f}".rstrip("0").rstrip(".") if f % 1 else f"{int(f):,}"
+    # Fils are always two digits: "6,152.5" reads as a typo for 6,152.50.
+    return f"{f:,.2f}" if f % 1 else f"{int(f):,}"
 
 
 def _stem(w: str) -> str:
@@ -124,7 +165,13 @@ def _stem(w: str) -> str:
     Without this, "how old can car tyres be" matched no row that says "tyre",
     and answered a question about the age limit with the fine instead.
     """
-    return w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w
+    w = w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w
+    return _SPELLING.get(w, w)
+
+
+# American spellings the files never use. "motorcycle license cost dubai"
+# matched no row, because every licence row says "licence".
+_SPELLING = {"license": "licence", "tire": "tyre", "liter": "litre"}
 
 
 def _tokens(*parts: str) -> set[str]:
@@ -157,8 +204,8 @@ def _squash(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", text.lower())
 
 
-@lru_cache(maxsize=1)
-def _model_vocab() -> frozenset[str]:
+@lru_cache(maxsize=2)
+def _model_vocab(bike: bool = False) -> frozenset[str]:
     """Short model codes that must survive the length filter.
 
     Terms shorter than three characters are dropped as noise, which quietly
@@ -167,7 +214,7 @@ def _model_vocab() -> frozenset[str]:
     Series" stays excluded: it would match "top 3 cars in uae".
     """
     out = set()
-    for row in load():
+    for row in (load_bikes() if bike else load()):
         for tok in _tokens(row.get("model", "")):
             if (len(tok) == 2 and any(c.isalpha() for c in tok)
                     and tok not in _SHORT_WORDS):
@@ -332,6 +379,23 @@ PHRASE_TERMS = {
 # gets them named in the nightly skip list, which is the honest outcome.
 ROUTE_ONLY = _fold({"legal", "total"})
 
+# Words that say what KIND of car, not WHICH car. They may score against a
+# row's segment and powertrain, never against its brand or model name.
+#
+# "electric car in dubai in kannada" led with a MINI Cooper Electric at
+# 235,000 and a Porsche Macan Electric at 310,300, because "electric" counted
+# three times over against those model NAMES. The 74,900 and 79,900 EVs never
+# made the twelve rows at all, the writer called the cheapest car it was
+# handed "the cheapest electric car in Dubai", and the draft said 109,900 when
+# seven EVs in this file cost less. "ev" did the same through "Captiva EV",
+# "Qin Plus EV" and "Hummer EV". A model name that contains its own
+# powertrain is restating the category, not identifying the car.
+CATEGORY_WORDS = _fold({
+    "electric", "ev", "evs", "hybrid", "hybrids", "phev", "diesel", "petrol",
+    "suv", "suvs", "sedan", "sedans", "hatchback", "hatchbacks", "coupe",
+    "convertible", "pickup", "pickups", "mpv", "van", "crossover", "wagon",
+})
+
 # Words that appear in almost every row and every query, and so tell you
 # nothing about which row to return. Leaving them in was why "car impound
 # rules in dubai" answered with a car loan: both rows contained "car".
@@ -362,10 +426,16 @@ STOPWORDS = _fold({"car", "cars", "uae", "dubai", "abu", "dhabi", "sharjah",
                    # it for resembling "Total Loss in UAE Cars" — on "in".
                    "be", "is", "was", "in", "on", "at", "of", "to", "a", "an",
                    "it", "its", "my", "do", "i", "vs", "or", "if", "from",
-                   "that", "this", "they", "will", "have", "has", "any"})
+                   "that", "this", "they", "will", "have", "has", "any",
+                   # Say WHICH pool to search, then nothing. "motorcycle" is
+                   # in nearly every bike rule; left in, it outranks the
+                   # word the viewer actually asked about.
+                   "bike", "bikes", "motorbike", "motorbikes", "motorcycle",
+                   "motorcycles", "motorcyclist", "motorcyclists", "biker",
+                   "bikers"})
 
 
-def _idf() -> dict[str, float]:
+def _idf(pool: str = "car") -> dict[str, float]:
     """How much a matched word is worth, by how rare it is in the data.
 
     "insurance" appears in half the rows and separates nothing; "depreciation"
@@ -373,20 +443,22 @@ def _idf() -> dict[str, float]:
     as one point meant a question about depreciation was answered with the
     third-party liability cap, which is true, cited, and not the answer.
     """
-    global _IDF
-    if _IDF is None:
-        rows = usable_facts()
+    if pool not in _IDF:
+        rows = usable_facts(pool)
         df: dict[str, int] = {}
         for r in rows:
             for w in _tokens(r.get("category", ""), r.get("item", ""),
                              r.get("basis", ""), r.get("notes", "")):
                 df[w] = df.get(w, 0) + 1
         n = max(1, len(rows))
-        _IDF = {w: math.log(1 + n / (1 + c)) for w, c in df.items()}
-    return _IDF
+        _IDF[pool] = {w: math.log(1 + n / (1 + c)) for w, c in df.items()}
+    return _IDF[pool]
 
 
-_IDF: dict[str, float] | None = None
+# One table per pool: "motorcycle" is in nearly every bike rule and almost no
+# car rule, so a shared table would score it as rare on exactly the queries
+# where it separates nothing.
+_IDF: dict[str, dict[str, float]] = {}
 
 # Older name, kept for anything that imported it.
 INSURANCE_WORDS = FACT_WORDS
@@ -422,8 +494,13 @@ def describe(row: dict) -> str:
     """One line of fact, phrased so the writer can't mistake a base price for
     the whole range."""
     lo, hi = row.get("price_from_aed"), row.get("price_to_aed")
-    bits = [f"{row['brand']} {row['model']} {row['year']}",
-            row.get("segment", ""), row.get("powertrain", "")]
+    segment = row.get("segment", "")
+    if "engine_cc" in row:
+        # Say what it is: "naked" alone reads as nothing to the writer.
+        segment = {"scooter": "scooter", "trike": "three-wheel trike"}.get(
+            segment, f"{segment} motorcycle".strip())
+    bits = [f"{row['brand']} {row['model']} {row.get('year', '')}".strip(),
+            segment, row.get("powertrain", "")]
     price = f"from AED {int(lo):,}" if lo else ""
     if lo and hi:
         spread = (int(hi) - int(lo)) / int(lo)
@@ -467,6 +544,141 @@ PHRASE_SEGMENTS = {
 }
 
 
+# ------------------------------------------------------------- motorcycles --
+#
+# Which pool a query searches is decided by its vocabulary, before any
+# scoring. Words that can only mean a motorcycle route it; nothing else does.
+BIKE_WORDS = _fold({
+    "bike", "bikes", "motorbike", "motorbikes", "motorcycle", "motorcycles",
+    "motorcyclist", "motorcyclists", "biker", "bikers", "scooter", "scooters",
+    "moped", "mopeds", "superbike", "superbikes", "pillion", "helmet",
+    "helmets", "motocross",
+})
+BIKE_PHRASES = {"delivery rider", "delivery riders", "two wheeler",
+                "two-wheeler", "dirt bike", "quad bike", "gold wing",
+                "africa twin", "x-adv"}
+
+# Brands with no cars in this project. Brands that make both (Honda, BMW,
+# Suzuki) route only with a bike word or a bike model name — "honda price uae"
+# is a car question until it says otherwise. Many of these publish no UAE
+# prices at all (data/sources.csv says which); routing them still matters, so
+# "cheapest yamaha bike" finds nothing instead of finding a Yaris.
+BIKE_BRANDS = _fold({
+    "sharmax", "ducati", "enfield", "cfmoto", "yamaha", "kawasaki", "ktm",
+    "harley", "davidson", "triumph", "aprilia", "vespa", "husqvarna",
+    "benelli", "agusta", "bajaj", "tvs", "zontes", "voge", "kymco", "gasgas",
+})
+# Model names distinctive enough to route alone. A bike model that shares a
+# word with a car ("Continental GT", "Sport", "Classic") must not.
+BIKE_MODEL_WORDS = _fold({
+    "panigale", "multistrada", "diavel", "xdiavel", "hypermotard",
+    "streetfighter", "desertx", "scrambler", "fireblade", "goldwing",
+    "himalayan", "interceptor", "hayabusa", "ninja", "xadv",
+})
+
+# Micromobility is not motorcycling. "e scooter rules dubai" is about rental
+# kick-scooters and cycle tracks; handing it motorcycle fines would produce a
+# confidently wrong video, so these find nothing at all.
+NOT_MOTORCYCLE = ("bicycle", "bicycles", "cycling", "cyclist", "cycle track",
+                  "ebike", "e bike", "e-bike", "e scooter", "e-scooter",
+                  "escooter", "electric scooter", "kick scooter",
+                  "bike rack", "bike carrier", "mountain bike")
+
+# What KIND of bike, never WHICH bike — scored against segment only.
+BIKE_CATEGORY_WORDS = _fold({
+    "scooter", "scooters", "naked", "cruiser", "cruisers", "sport", "sports",
+    "touring", "tourer", "adventure", "adv", "classic", "retro", "commuter",
+    "trike", "superbike", "superbikes", "supermoto", "enduro", "dirt",
+    "offroad", "motocross",
+})
+BIKE_PHRASE_SEGMENTS = {
+    "off road": {"off", "road"}, "off-road": {"off", "road"},
+    "offroad": {"off", "road"}, "dirt": {"off", "road"},
+    "enduro": {"off", "road"}, "motocross": {"off", "road"},
+    "superbike": {"sport"}, "sports bike": {"sport"},
+    "sport bike": {"sport"}, "retro": {"classic"}, "cafe racer": {"classic"},
+    "tourer": {"touring"}, "adv": {"adventure"},
+}
+# Off-road bikes cannot be registered for the road, and a pit bike at 3,590
+# is not "the cheapest motorcycle in the UAE" in any sense a buyer means. They
+# appear only when the query asks for them.
+OFFROAD_PHRASES = ("off road", "off-road", "offroad", "dirt", "enduro",
+                   "motocross", "pit bike", "pitbike", "trail", "mx")
+BIKE_CHEAP_PHRASES = {"first bike", "beginner bike", "for beginners",
+                      "for beginner", "learner", "on a budget",
+                      "for delivery"}
+BIKE_FACT_WORDS = _fold({
+    "helmet", "helmets", "pillion", "passenger", "course", "courses",
+    "training", "lesson", "lessons", "test", "school", "lane", "lanes",
+    "delivery", "gear", "glove", "gloves", "jacket", "noise", "noisy", "loud",
+    "exhaust", "modified", "modification", "stunt", "stunts", "wheelie",
+    "quad", "atv", "headlight", "lights", "fee", "fees", "permit", "age",
+})
+BIKE_FACT_PHRASES = {"red light", "eye test", "road test", "traffic file",
+                     "learning permit", "how to get", "get a licence",
+                     "get a license"}
+# What a licence-cost question means in the files' own vocabulary. Only
+# multi-word phrases: a bare "cost" or "price" must not drag twelve course
+# fee rows in front of a question about what a CB300R costs.
+BIKE_PHRASE_TERMS = {
+    "licence cost": {"fee", "course"}, "license cost": {"fee", "course"},
+    "licence fee": {"fee", "course"}, "license fee": {"fee", "course"},
+    "licence price": {"fee", "course"}, "license price": {"fee", "course"},
+    "course fee": {"fee", "course"}, "course cost": {"fee", "course"},
+    "training cost": {"fee", "course"}, "how to get": {"step"},
+    "get a licence": {"step"}, "get a license": {"step"},
+    "age limit": {"age"}, "loud exhaust": {"noisy", "exhaust"},
+    "red light": {"red", "light"},
+    # The motorcycle premium bands are filed as "Third-party liability" and
+    # never use the word insurance, so "motorcycle insurance cost in uae"
+    # found only the no-insurance FINE and led with that.
+    "insurance": {"third", "party", "liability"},
+}
+
+
+@lru_cache(maxsize=1)
+def _bike_identity_words() -> frozenset[str]:
+    """Bike model codes no car shares: "cb300r", "450sr", "crf450r".
+
+    Only tokens with a digit and a letter, so "Classic 350" contributes
+    nothing and "350" never routes a car query.
+    """
+    car = set()
+    for r in load():
+        car |= _tokens(r.get("brand", ""), r.get("model", ""))
+    out = set()
+    for r in load_bikes():
+        for tok in _tokens(r.get("model", "")):
+            if (len(tok) >= 4 and re.search(r"\d", tok)
+                    and re.search(r"[a-z]", tok) and tok not in car):
+                out.add(tok)
+    return frozenset(out)
+
+
+def is_bike_query(query: str) -> bool:
+    lowered = f" {query.lower()} "
+    raw = _tokens(query)
+    return bool(raw & BIKE_WORDS or raw & BIKE_BRANDS or raw & BIKE_MODEL_WORDS
+                or raw & _bike_identity_words()
+                or any(_phrase_in(lowered, ph) for ph in BIKE_PHRASES)
+                or any(_phrase_in(lowered, ph.strip()) for ph in NOT_MOTORCYCLE))
+
+
+def not_motorcycle(query: str) -> bool:
+    lowered = query.lower()
+    return any(_phrase_in(lowered, ph) for ph in NOT_MOTORCYCLE)
+
+
+def wants_offroad(query: str) -> bool:
+    # Word boundaries: "trail" must not fire inside "trailer".
+    lowered = query.lower()
+    return any(_phrase_in(lowered, ph) for ph in OFFROAD_PHRASES)
+
+
+def road_bike(row: dict) -> bool:
+    return "off" not in _tokens(row.get("segment", ""))
+
+
 def facts_for(query: str, limit: int = 12) -> str:
     """Rows relevant to a search query, as text for the writer's prompt.
 
@@ -478,7 +690,20 @@ def facts_for(query: str, limit: int = 12) -> str:
     from .sources import tier_of
 
     lowered = query.lower()
-    vocab = _model_vocab()
+    bike = is_bike_query(query)
+    if bike and not_motorcycle(query):
+        return ""
+    vocab = _model_vocab(bike)
+    pool = "bike" if bike else "car"
+    seg_table = BIKE_PHRASE_SEGMENTS if bike else PHRASE_SEGMENTS
+    term_table = {**PHRASE_TERMS, **BIKE_PHRASE_TERMS} if bike else PHRASE_TERMS
+    cheap_phrases = CHEAP_PHRASES | BIKE_CHEAP_PHRASES if bike else CHEAP_PHRASES
+    category_words = CATEGORY_WORDS | BIKE_CATEGORY_WORDS if bike else CATEGORY_WORDS
+    fact_words = FACT_WORDS | BIKE_FACT_WORDS if bike else FACT_WORDS
+    fact_phrases = FACT_PHRASES | BIKE_FACT_PHRASES if bike else FACT_PHRASES
+    rows = load_bikes() if bike else load()
+    if bike and not wants_offroad(query):
+        rows = [r for r in rows if road_bike(r)]
 
     # `direct` is what the viewer actually typed; `implied` is what a phrase
     # rule inferred from it. Scoring them alike is what put a MINI Cooper
@@ -488,10 +713,10 @@ def facts_for(query: str, limit: int = 12) -> str:
     direct = {w for w in _tokens(query)
               if (len(w) > 2 or w in vocab) and w not in STOPWORDS}
     implied: set[str] = set()
-    for phrase, segs in PHRASE_SEGMENTS.items():
+    for phrase, segs in seg_table.items():
         if _phrase_in(lowered, phrase):
             implied |= _fold(segs)
-    for phrase, extra in PHRASE_TERMS.items():
+    for phrase, extra in term_table.items():
         if _phrase_in(lowered, phrase):
             implied |= _fold(extra)
     # STOPWORDS filters `direct`, but PHRASE_TERMS was putting the same words
@@ -511,10 +736,10 @@ def facts_for(query: str, limit: int = 12) -> str:
     # MPV, which matches "mpv", on a question where the two are equal. A
     # group is satisfied or it isn't.
     groups: list[frozenset[str]] = []
-    for phrase, segs in PHRASE_SEGMENTS.items():
+    for phrase, segs in seg_table.items():
         if _phrase_in(lowered, phrase):
             groups.append(frozenset(_fold(segs) - STOPWORDS))
-    for phrase, extra in PHRASE_TERMS.items():
+    for phrase, extra in term_table.items():
         if _phrase_in(lowered, phrase):
             groups.append(frozenset(_fold(extra) - STOPWORDS))
     groups += [frozenset({w}) for w in direct]   # a typed word is its own group
@@ -523,10 +748,12 @@ def facts_for(query: str, limit: int = 12) -> str:
         return ""
 
     wants_cheap = bool(terms & CHEAP_WORDS) or any(
-        _phrase_in(lowered, ph) for ph in CHEAP_PHRASES)
+        _phrase_in(lowered, ph) for ph in cheap_phrases)
+    identity = direct - category_words
+    named = False                 # did the query pick out any brand or model?
     hits: list[tuple[int, int, int, str]] = []
 
-    for row in load():
+    for row in rows:
         if not usable(row):
             continue
         brand_tok = _tokens(row.get("brand", ""))
@@ -538,12 +765,20 @@ def facts_for(query: str, limit: int = 12) -> str:
             model_tok = model_tok | {squashed}
         category = _tokens(row.get("segment", ""), row.get("powertrain", ""))
 
-        score = 3 * len(direct & (brand_tok | model_tok)) \
-            + len(terms & category)
+        matched = identity & (brand_tok | model_tok)
+        named = named or bool(matched)
+        # Once the query HAS named a family, a category word in a model name
+        # stops restating the category and starts telling variants apart:
+        # "land cruiser hybrid" must still lead with the Land Cruiser Hybrid,
+        # not the FJ. So it counts — but only on top of a real identity
+        # match, never in place of one.
+        if matched:
+            matched = matched | (direct & category_words & model_tok)
+        score = 3 * len(matched) + len(terms & category)
         # Naming the brand AND the model is not a near-miss — it is the
         # subject of the video. Without this the T1 sat seventh in its own
         # query, behind six other Jetours ordered only by price.
-        if (direct & brand_tok) and (direct & model_tok):
+        if (identity & brand_tok) and (identity & model_tok):
             score += 10
         if score:
             price = int(row.get("price_from_aed") or 0)
@@ -567,7 +802,7 @@ def facts_for(query: str, limit: int = 12) -> str:
     # term `ferrari`, finds no row, and is left empty on purpose, because the
     # cheapest rows in this file are not an answer to that question.
     if not hits and wants_cheap and not (direct - CHEAP_WORDS):
-        for row in load():
+        for row in rows:
             price = int(row.get("price_from_aed") or 0)
             if not usable(row) or not price:
                 continue
@@ -582,6 +817,16 @@ def facts_for(query: str, limit: int = 12) -> str:
     # script read out petrol. Ranking by score first puts the rows that match
     # BOTH words on top, and sorts those by price, which is what the question
     # actually asked. Source tier breaks the remaining ties.
+    #
+    # A query that names no brand or model is asking about a CATEGORY —
+    # "electric car in dubai", "ev car in dubai" — and every row in it scores
+    # alike, so the old ordering fell back to source tier and then price
+    # inside each tier: a pick of the category, but not its cheapest end. This
+    # channel's writer reliably frames these as "the cheapest X", so it has to
+    # be handed the cheapest X to say that truthfully. false_superlative() in
+    # script.py is the check; this is what lets the check pass.
+    if not named and groups:
+        wants_cheap = True
     hits.sort(key=lambda t: (-t[4], t[2], t[1]) if wants_cheap
               else (-t[0], t[1], t[2]))
     out = [t[3] for t in hits[:limit]]
@@ -591,10 +836,10 @@ def facts_for(query: str, limit: int = 12) -> str:
     # buying one, they lead — but they have to be RANKED, not just listed.
     # Taking them in file order meant "salik charges dubai" returned
     # third-party liability tables, because insurance.csv loads first.
-    if (terms & FACT_WORDS) or (_tokens(query) & ROUTE_ONLY) or \
-            any(_phrase_in(lowered, ph) for ph in FACT_PHRASES):
+    if (terms & fact_words) or (_tokens(query) & ROUTE_ONLY) or \
+            any(_phrase_in(lowered, ph) for ph in fact_phrases):
         scored = []
-        for r in usable_facts():
+        for r in usable_facts(pool):
             if not usable(r):
                 continue
             # Weighted the same way car rows are, and for the same reason.
@@ -603,7 +848,7 @@ def facts_for(query: str, limit: int = 12) -> str:
             # dubai" answered with the registration fee.
             name = _tokens(r.get("category", ""), r.get("item", ""))
             body = _tokens(r.get("basis", ""), r.get("notes", ""))
-            idf = _idf()
+            idf = _idf(pool)
             score = (3 * sum(idf.get(w, 1.0) for w in terms & name)
                      + sum(idf.get(w, 1.0) for w in terms & body))
             if score:
@@ -622,14 +867,18 @@ def explain(query: str) -> str:
     dropped the query was to read it. This prints the working.
     """
     lowered = query.lower()
-    vocab = _model_vocab()
+    bike = is_bike_query(query)
+    vocab = _model_vocab(bike)
     raw = _tokens(query)
     direct = {w for w in raw
               if (len(w) > 2 or w in vocab) and w not in STOPWORDS}
     dropped = raw - direct
     implied: set[str] = set()
     fired = []
-    for table, name in ((PHRASE_SEGMENTS, "segment"), (PHRASE_TERMS, "term")):
+    tables = (((BIKE_PHRASE_SEGMENTS, "segment"),
+               ({**PHRASE_TERMS, **BIKE_PHRASE_TERMS}, "term")) if bike else
+              ((PHRASE_SEGMENTS, "segment"), (PHRASE_TERMS, "term")))
+    for table, name in tables:
         for phrase, extra in table.items():
             if _phrase_in(lowered, phrase):
                 implied |= _fold(extra)
@@ -638,8 +887,10 @@ def explain(query: str) -> str:
 
     cheap = bool((direct | implied) & CHEAP_WORDS) or any(
         _phrase_in(lowered, ph) for ph in CHEAP_PHRASES)
-    facts = bool(((direct | implied) & FACT_WORDS) or (raw & ROUTE_ONLY)
-                 or any(_phrase_in(lowered, ph) for ph in FACT_PHRASES))
+    fw = FACT_WORDS | BIKE_FACT_WORDS if bike else FACT_WORDS
+    fp = FACT_PHRASES | BIKE_FACT_PHRASES if bike else FACT_PHRASES
+    facts = bool(((direct | implied) & fw) or (raw & ROUTE_ONLY)
+                 or any(_phrase_in(lowered, ph) for ph in fp))
 
     out = [f"query      {query!r}",
            f"searching  {sorted(direct) or '(nothing — see dropped)'}",
@@ -649,7 +900,14 @@ def explain(query: str) -> str:
     else:
         out.append("bridges    none fired")
     out.append(f"ranking    {'cheapest first' if cheap else 'best match first'}")
-    out.append(f"files      cars.csv" + (" + the cost and law files" if facts else " only"))
+    if bike and not_motorcycle(query):
+        out.append("files      none — bicycles and e-scooters are not motorcycles")
+    elif bike:
+        out.append("files      bikes.csv" + (" + bike_rules.csv and the motorcycle rows"
+                                              " of the cost files" if facts else " only")
+                   + ("" if wants_offroad(query) else "; off-road bikes left out"))
+    else:
+        out.append(f"files      cars.csv" + (" + the cost and law files" if facts else " only"))
 
     rows = facts_for(query)
     n = len(rows.splitlines()) if rows else 0
@@ -677,7 +935,7 @@ def known_source_urls() -> set[str]:
     there are insurance rows in the file.
     """
     return {row["source_url"].strip()
-            for row in load() + usable_facts()
+            for row in load() + load_bikes() + usable_facts("all")
             if row.get("source_url", "").strip()}
 
 
@@ -714,7 +972,7 @@ def source_for(value, context: str = "") -> str | None:
     fact_ctx = _tokens(context) - STOPWORDS
     best, best_score = None, -1
 
-    for row in load():
+    for row in load() + load_bikes():
         if not usable(row):
             continue
         matched = any(
@@ -741,7 +999,7 @@ def source_for(value, context: str = "") -> str | None:
     # phone fine and the child-seat fine, and citing the wrong one is a
     # mistake a viewer will catch.
     best, best_score = None, -1
-    for row in usable_facts():
+    for row in usable_facts("all"):
         if not usable(row):
             continue
         matched = False
@@ -759,7 +1017,7 @@ def source_for(value, context: str = "") -> str | None:
         # made "maximum tint private cars percent" match "Maximum total
         # repayments" on the word "maximum", and let an incidental word in a
         # notes field outrank the row's own name.
-        idf = _idf()
+        idf = _idf("all")
         # Identity is the item AND its category — "After 3 claim-free years"
         # is only identifiable as a no-claims figure via the category. Basis
         # and notes are prose and stay out of it.
@@ -828,6 +1086,19 @@ def report() -> int:
         print(f"\nStale, re-check before these can be used again:")
         for r in stale[:10]:
             print(f"  · {r['brand']} {r['model']} (checked {r['checked_on']})")
+
+    bikes = load_bikes()
+    if bikes:
+        rules = usable_facts("bike")
+        print(f"{len(bikes)} rows in {BIKES_PATH.name} "
+              f"({sum(1 for r in bikes if usable(r))} usable, "
+              f"{sum(1 for r in bikes if not road_bike(r))} off-road)  +  "
+              f"{len(rules)} motorcycle rule/cost rows "
+              f"({sum(1 for r in rules if usable(r))} usable)")
+        by = {}
+        for r in bikes:
+            by[r["brand"]] = by.get(r["brand"], 0) + 1
+        print("  " + ", ".join(f"{b} {n}" for b, n in by.items()))
 
     print()
     return 0

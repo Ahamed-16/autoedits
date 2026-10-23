@@ -15,6 +15,11 @@ import traceback
 from . import cars, db, render as R, script, voice
 from .config import CFG, DRAFTS_PER_NIGHT, WORK
 
+# One of the nightly drafts is a motorcycle topic when one is covered. A
+# reserved slot rather than a shared queue, because by score alone the car
+# topics win every night: there are 1,500 of them and a few dozen bike ones.
+BIKE_SLOTS = int(CFG["pipeline"].get("bike_slots_per_night", 1))
+
 # Pulls matching rows from your curated data, excluding anything flagged
 # CONFLICT or gone stale. See autoedits/cars.py.
 facts_for = cars.facts_for
@@ -98,10 +103,25 @@ def run(n: int | None = None) -> list[int]:
     # can't be cited is discarded, and on a CPU-only box that discard costs
     # six minutes of writing — so it's worth spending a millisecond up front
     # checking whether cars.csv has anything to say about the subject.
-    candidates = db.next_topics(n * 10)
-    if not candidates:
+    is_bike = cars.is_bike_query
+    candidates = db.next_topics(n * 10, match=lambda q: not is_bike(q))
+    bike_cands = db.next_topics(10, match=is_bike) if BIKE_SLOTS else []
+    if not candidates and not bike_cands:
         print("No topics queued. Run: python -m autoedits.topics")
         return []
+
+    # Bikes first, so the reserved slot is filled from the bike queue; the
+    # car topics then take what is left. If no bike topic has data the slot
+    # goes back to the cars — a covered car video is not a hollow one.
+    bikes = [r for r in bike_cands if facts_for(r["query"])][:min(BIKE_SLOTS, n)]
+    if BIKE_SLOTS:
+        if bikes:
+            print(f"Bike slot: {bikes[0]['query']!r}")
+        else:
+            print(f"Bike slot: none of {len(bike_cands)} queued motorcycle "
+                  f"topics have data in bikes.csv or bike_rules.csv; the slot "
+                  f"goes to a car topic tonight.")
+    n_cars = n - len(bikes)
 
     # A topic with no rows in cars.csv gives the writer nothing to stand on.
     # It does not fail loudly — it produces a script that gestures at figures
@@ -111,19 +131,28 @@ def run(n: int | None = None) -> list[int]:
     # So the quota does NOT get topped up. Fewer drafts beats hollow ones.
     covered = [r for r in candidates if facts_for(r["query"])]
     uncovered = [r["query"] for r in candidates if not facts_for(r["query"])]
-    topics = covered[:n]
+    topics = bikes + covered[:n_cars]
 
     if topics:
         print(f"{len(covered)} of {len(candidates)} queued topics have data in "
-              f"cars.csv; building {len(topics)}.")
+              f"cars.csv; building {len(topics)}"
+              + (f", {len(bikes)} of them a motorcycle topic." if bikes else "."))
         if len(topics) < n:
             print(f"    ({n - len(topics)} fewer than the nightly target — the "
                   f"rest have no supporting data and were left queued.)")
+    else:
+        print(f"None of the top {len(candidates)} queued topics have data in "
+              f"cars.csv, so nothing was built — a script with no figures is "
+              f"not worth the render time.\n"
+              f"  Add rows to data/cars.csv for a subject you have queued, or "
+              f"queue topics your data covers: python -m autoedits.topics")
+
     # A count was all this printed, which told you a number and gave you
-    # nothing to do with it. The queue holds 1,491 phrases; knowing that 38 of
-    # the top 50 have no data does not tell you WHICH, and the ones worth
+    # nothing to do with it. The queue holds ~1,500 phrases; knowing that 38
+    # of the top 50 have no data does not tell you WHICH, and the ones worth
     # acting on are always at the top. Naming them turns a statistic into a
-    # list of rows to add.
+    # list of rows to add. It is printed on the way out too, because a night
+    # that built nothing is exactly when you need it.
     if uncovered:
         print(f"\n  No data for {len(uncovered)}, highest-demand first:")
         for q in uncovered[:8]:
@@ -132,12 +161,15 @@ def run(n: int | None = None) -> list[int]:
             print(f"    … and {len(uncovered) - 8} more")
         print(f"  Why one of them matched nothing:\n"
               f"    python -m autoedits.cars --why {uncovered[0]!r}")
-    else:
-        print(f"None of the top {len(candidates)} queued topics have data in "
-              f"cars.csv, so nothing was built — a script with no figures is "
-              f"not worth the render time.\n"
-              f"  Add rows to data/cars.csv for a subject you have queued, or "
-              f"queue topics your data covers: python -m autoedits.topics")
+
+    # This `return` used to be the tail of the `else` above. Inserting the
+    # uncovered listing between the `if` and its `else` silently re-bound
+    # that `else` to `if uncovered:` — Python accepts it, since either `if`
+    # can own an `else`. The run then printed the list of topics it could not
+    # build, skipped the sentence explaining what to do about it, and fell
+    # through to iterate an empty list. Two nights produced nothing with no
+    # usable diagnosis.
+    if not topics:
         return []
 
     made = []

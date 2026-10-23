@@ -58,7 +58,11 @@ CASES: list[tuple[str, list[str], list[str]]] = [
     ("cheapest electric suv in uae", ["Spark EUV"], ["Petrol"]),
     # And then by a MINI Cooper ELECTRIC at AED 235,000, because "electric"
     # scores 3x against a model NAME and 1x against a powertrain.
-    ("cheapest electric car in uae", ["BYD Qin Plus"], []),
+    # This case used to demand "BYD Qin Plus" in the lead, which locked a
+    # single aggregator row in as ground truth. That row turned out to be a
+    # PHEV listed as an EV, and is now withheld as CONFLICT. A test should
+    # pin the RANKING (an electric car, cheapest first), not a car.
+    ("cheapest electric car in uae", ["Electric"], ["Petrol"]),
     # Led by a Land Cruiser 70 at AED 177,900 — a Full Size SUV matched two
     # words of the "7 seater" bridge where an MPV matched one.
     ("cheapest 7 seater in uae", ["Xpander", "MPV"], []),
@@ -70,6 +74,17 @@ CASES: list[tuple[str, list[str], list[str]]] = [
     # The highest-demand phrase in the whole queue, and it returned nothing.
     ("car expenses in dubai", ["Registration", "Salik", "Fuel"], []),
     ("running cost of a car in uae", ["Registration", "Salik", "Fuel"], []),
+
+    # Category words may not score against a model NAME. "electric" matched
+    # "MINI Cooper Electric" three times over, so a generic electric-car
+    # query led with a 235,000 MINI and never reached the cheap EVs; the
+    # writer then called 109,900 "the cheapest electric car in Dubai".
+    ("electric car in dubai in kannada", ["Spark EUV", "Aion ES"], []),
+    ("ev car in dubai", ["Spark EUV", "Aion ES"], []),
+    ("byd sedan uae", ["BYD"], []),      # led by a Mazda3 Sedan, on "sedan"
+    # ...but once a family IS named, the same word tells its variants apart.
+    ("land cruiser hybrid vs petrol uae", ["Land Cruiser Hybrid"], []),
+    ("mini cooper electric uae", ["Cooper Electric"], []),
 
     # Deliberate non-matches. "black"/"white" and "hot" stay out of the
     # routing words so these remain shopping queries.
@@ -115,6 +130,15 @@ UNCOVERED = ["used car prices in uae", "car mechanic in dubai",
 def test_uncovered_stays_empty():
     wrong = [q for q in UNCOVERED if facts_for(q)]
     assert not wrong, f"these have no supporting data and should return nothing: {wrong}"
+
+
+def test_a_category_query_is_never_led_by_a_name_match():
+    """The lead row of a pure category query must be the category's cheapest,
+    not whichever luxury model happens to carry the category in its name."""
+    for q in ("electric car in uae", "electric car in dubai in kannada"):
+        lead = facts_for(q).splitlines()[0]
+        assert not any(w in lead for w in ("MINI Cooper", "Porsche", "Hummer")), (
+            f"{q!r} is led by a name match: {lead[:80]}")
 
 
 if __name__ == "__main__":

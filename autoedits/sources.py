@@ -17,6 +17,11 @@ So sources are tiered, in data/sources.csv:
     primary    the legislation itself — uaelegislation.gov.ae, moj.gov.ae
     official   the body that administers it — u.ae, RTA, MoI, Dubai Police,
                the Central Bank rulebook
+    manufacturer  a brand or its UAE distributor: the last word on its own
+               prices, no word at all on the law
+    provider   a driving school (Belhasa, EDI): the last word on its own
+               course fees, no word on RTA's — Belhasa's page quotes three
+               different licence fees, none of them RTA's own
     press      Gulf News, Khaleej Times. Good for *that a rule changed*.
                Never good enough for *what the rule says*.
     unlisted   everything else
@@ -46,6 +51,12 @@ LAW_CATEGORIES = {
     "Traffic law", "Motor insurance law", "Comprehensive policy",
     "Driving licence", "White points", "Car finance",
     "Tyre law", "Window tint", "Child safety",
+    # data/bike_rules.csv. Course fees, training hours and gear ADVICE are
+    # deliberately not here: a school's price list is not a legal claim, and
+    # "a reflective vest is advised" must never be gated as if it were law.
+    "Motorcycle law", "Motorcycle licence", "Motorcycle helmet",
+    "Motorcycle offence", "Traffic offence (all vehicles)",
+    "Delivery bike rules", "Motorcycle registration",
 }
 
 # The law actually in force. Federal Decree-Law No. 14 of 2024 replaced the
@@ -149,7 +160,7 @@ def audit(rows: list[dict]) -> list[dict]:
 def report() -> int:
     from .cars import load_facts
 
-    rows = load_facts()
+    rows = load_facts("all")
     law_rows = [r for r in rows
                 if (r.get("category") or "").strip() in LAW_CATEGORIES]
     problems = audit(rows)
@@ -161,10 +172,11 @@ def report() -> int:
     for r in law_rows:
         counts[tier_of(r.get("source_url", ""))] = \
             counts.get(tier_of(r.get("source_url", "")), 0) + 1
-    for tier in ("primary", "official", "manufacturer", "press", "unlisted"):
+    for tier in ("primary", "official", "manufacturer", "provider", "press",
+                 "unlisted"):
         if counts.get(tier):
             mark = "ok " if tier in ACCEPTABLE_FOR_LAW else "BAD"
-            print(f"  {mark}  {tier:<9} {counts[tier]:>3} claims")
+            print(f"  {mark}  {tier:<12} {counts[tier]:>3} claims")
 
     if not problems:
         print("\nEvery legal claim rests on a primary or official source.\n")

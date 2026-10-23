@@ -341,11 +341,11 @@ def check_sources():
     check(f"registry loaded ({len(registry())} domains)", bool(registry()),
           "data/sources.csv is missing or empty")
 
-    rows = load_facts()
+    rows = load_facts("all")
     law = [r for r in rows
            if (r.get("category") or "").strip() in LAW_CATEGORIES]
     problems = audit(rows)
-    blocked = len(rows) - len(usable_facts())
+    blocked = len(rows) - len(usable_facts("all"))
 
     check(f"{len(law) - len(problems)}/{len(law)} legal claims officially "
           f"sourced", not problems,
