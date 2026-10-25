@@ -7,6 +7,7 @@ any SQLite browser, and nothing depends on a service being up.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -134,6 +135,15 @@ TOO_SOON = 0.28          # against the last few: right subject, wrong week
 COOLDOWN = 10            # how many recent videos the cooldown looks back over
 
 
+PRICE_WORDS = {"dirham", "dhs"}
+_PRICE = re.compile(
+    r"(?:\b(?:under|over|below|above|less than|around|about|up to|upto"
+    r"|from|at)\s+)?(?:\b(?:aed|dhs?)\s*)?\d[\d,]*(?:\.\d+)?\s*"
+    r"(?:k\b|dirhams?\b|aed\b)"
+    r"|\b(?:under|over|below|above)\s+\d[\d,]{3,}"
+    r"|\b(?:aed|dhs?)\s*\d[\d,]*(?:\.\d+)?", re.I)
+
+
 def _subject(text: str) -> set[str]:
     """The words in a phrase that actually carry its subject.
 
@@ -146,7 +156,19 @@ def _subject(text: str) -> set[str]:
     neither matches a car video.
     """
     from .cars import _tokens, STOPWORDS, is_bike_query   # late: import cycle
-    subj = _tokens(text) - STOPWORDS
+    # A price says how much, not what about. "Best budget car in the UAE
+    # under 40,000 dirhams" counted 40, 000, under and dirham as subject
+    # words, which diluted it to 0.20 against "best budget car in uae dubai"
+    # and let the same video through on consecutive nights (#137, #138).
+    # Model codes keep their digits: x50 and x70 are different cars.
+    #
+    # Only the PRICE goes, not every number: dropping all digits turned
+    # "byd seal 7" into "byd seal" and "7 seater ... girl" into "seater",
+    # blocking real models and letting junk through. Model years go too —
+    # "nissan patrol 2025 uae" is the Patrol video.
+    text = _PRICE.sub(" ", text or "")
+    text = re.sub(r"\b(?:19|20)\d\d\b", " ", text)
+    subj = _tokens(text) - STOPWORDS - PRICE_WORDS
     return subj | {"motorcycle"} if is_bike_query(text) else subj
 
 

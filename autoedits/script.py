@@ -782,6 +782,13 @@ def false_superlative(spec: dict) -> list[str]:
     lowered = title.lower()
     if any(_phrase_in(lowered, r["brand"].lower()) for r in rows if r.get("brand")):
         return []
+    # A full multi-word model name scopes the claim the same way a brand
+    # does: "Land Cruiser FJ price compared to other UAE models" was refused
+    # for calling the FJ the cheapest car in the UAE. One-word model names
+    # are ordinary English ("city", "patrol") and do not count.
+    if any(len(r["model"].split()) >= 2 and _phrase_in(lowered, r["model"].lower())
+           for r in rows if r.get("model")):
+        return []
 
     want = {_CATEGORY_ALIAS.get(w, w) for w in _tokens(title) & words}
 
@@ -2340,6 +2347,9 @@ if __name__ == "__main__":
             slug = _re.sub(r"[^a-z0-9]+", "-", query.lower()).strip("-")[:60]
             d = WORK / slug
             d.mkdir(parents=True, exist_ok=True)
+            # --from-spec re-runs every check, and needs to know which facts
+            # this script was written against.
+            spec["query"] = query
             (d / "spec.json").write_text(
                 json.dumps(spec, indent=2, ensure_ascii=False))
             print(f"\n  saved {d / 'spec.json'}")

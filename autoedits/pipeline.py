@@ -191,6 +191,49 @@ def run(n: int | None = None) -> list[int]:
     return made
 
 
+def _spec_facts(spec: dict, slug: str) -> str:
+    """The facts a saved spec is checked against.
+
+    A spec saved by `script --probe --save` records its query. Older ones
+    don't, but their folder name is the slugified query, and a hand-written
+    one at least has a title. Every distinct row any of them finds is used,
+    so a figure is not called invented just because one phrasing missed it.
+    """
+    seen, rows = set(), []
+    for q in (spec.get("query"), slug.replace("-", " "), spec.get("title")):
+        for line in (facts_for(q) if q else "").splitlines():
+            if line and line not in seen:
+                seen.add(line)
+                rows.append(line)
+    return "\n".join(rows)
+
+
+def _passes_checks(spec: dict, slug: str) -> bool:
+    """The checkpoints a generated script passes, applied to a saved one.
+
+    --from-spec ran only the sourcing gate, and --rebuild ran nothing, so a
+    script edited by hand after it was saved reached a render without the
+    narration checks or the description check. There is no repair pass here
+    — the script is yours to edit — so a failing line refuses the build and
+    says which line and why.
+    """
+    facts = _spec_facts(spec, slug)
+    bad = script._narration_faults(spec, facts)
+    if bad:
+        print(f"  refused: {len(bad)} line(s) fail the narration checks. "
+              f"Edit work/{slug}/spec.json and run it again:")
+        for b in bad:
+            print(f"    {b[:160]}")
+        return False
+    dropped = script.clean_description(spec, facts)
+    if dropped:
+        print(f"  description: dropped {len(dropped)} sentence(s) that failed "
+              f"the figure checks")
+        for d in dropped:
+            print(f"    {d[:150]}")
+    return True
+
+
 def from_spec(slug: str, engine: str | None = None) -> int | None:
     """Build a draft from a spec.json you wrote by hand.
 
@@ -214,6 +257,7 @@ def from_spec(slug: str, engine: str | None = None) -> int | None:
 
     # A hand-written script gets the same sourcing gate as a generated one.
     # Writing it yourself is not evidence.
+    script.attach_sources(spec)
     missing = script.unsourced(spec)
     if missing and CFG["pipeline"]["require_sources"]:
         print(f"  refused: numbers with no traceable source in {missing}")
@@ -221,6 +265,9 @@ def from_spec(slug: str, engine: str | None = None) -> int | None:
 
     if not script.has_evidence(spec):
         print("  refused: no stat or comparison scene — nothing to show")
+        return None
+
+    if not _passes_checks(spec, slug):
         return None
 
     print(f"  → {spec['title']}")
@@ -272,6 +319,10 @@ def rebuild(slug: str) -> int | None:
         return None
 
     spec = json.loads(spec_path.read_text())
+    # The voice track was recorded from this narration, so a line that fails
+    # a check now is already IN the audio. Re-rendering would ship it again.
+    if not _passes_checks(spec, slug):
+        return None
     dur_path = d / "durations.json"
     durations = json.loads(dur_path.read_text()) if dur_path.exists() else None
 
@@ -281,6 +332,10 @@ def rebuild(slug: str) -> int | None:
     R.thumbnail(scenes, str(poster_path), at=2.0)
 
     db.init()
+    # The rebuild overwrote the same .mp4, so the older draft row now points
+    # at footage nobody reviewed. from_spec already retired it; this did not,
+    # and each rebuild left a duplicate in the review queue.
+    db.supersede(str(video_path))
     vid = db.add_video(None, spec["title"], script.describe(spec),
                        spec.get("tags", []), spec["scenes"],
                        str(video_path), str(poster_path))

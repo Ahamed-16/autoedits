@@ -48,6 +48,94 @@ def test_a_genuine_rephrasing_is_still_refused():
         assert s >= D.SAME_TOPIC, f"{q!r} scored only {s:.2f}; it is the same video"
 
 
+class _Stop(Exception):
+    pass
+
+
+def _render_spec(spec, entry="from_spec", voice_exists=False):
+    """Run a render path on a spec in a throwaway work dir. Returns
+    (what it printed, whether the voice step was reached, superseded paths)."""
+    import json, tempfile
+    from autoedits import pipeline as Pm, voice as V
+    reached, superseded = [], []
+    real = (Pm.WORK, V.narrate, Pm.R.render, Pm.db.supersede, Pm.db.add_video,
+            Pm.R.thumbnail, Pm.db.init)
+    with tempfile.TemporaryDirectory() as tmp:
+        Pm.WORK = Path(tmp)
+        d = Path(tmp) / "slug"
+        d.mkdir()
+        (d / "spec.json").write_text(json.dumps(spec))
+        if voice_exists:
+            (d / "voice.mp3").write_bytes(b"x")
+
+        def narrate(*a, **k):
+            reached.append("voice")
+            raise _Stop()
+        V.narrate = narrate
+        Pm.R.render = lambda *a, **k: reached.append("render")
+        Pm.R.thumbnail = lambda *a, **k: None
+        Pm.db.init = lambda: None
+        Pm.db.supersede = lambda p, *a, **k: superseded.append(p) or 0
+        Pm.db.add_video = lambda *a, **k: 1
+        buf = io.StringIO()
+        try:
+            with redirect_stdout(buf):
+                getattr(Pm, entry)("slug")
+        except _Stop:
+            pass
+        finally:
+            (Pm.WORK, V.narrate, Pm.R.render, Pm.db.supersede, Pm.db.add_video,
+             Pm.R.thumbnail, Pm.db.init) = real
+    return buf.getvalue(), reached, superseded
+
+
+_GOOD = {"title": "Toyota Hilux 2027 price in UAE", "tags": [], "scenes": [
+    {"type": "hook", "text": "Hilux price?", "narration": "What does a Hilux cost?"},
+    {"type": "stat", "label": "Hilux from", "value": 120900, "prefix": "AED",
+     "source": "https://www.toyota.ae/en/new-cars/hilux",
+     "narration": "The Hilux starts at 120,900 dirhams."},
+    {"type": "verdict", "text": "Start with the GL.", "narration": "Start with the GL."},
+    {"type": "question", "text": "Petrol or diesel?", "narration": "Petrol or diesel?"}]}
+
+
+def test_from_spec_refuses_a_failing_script_before_the_voice():
+    """--from-spec ran only the sourcing gate, so a hand-edited spec with a
+    template line in it went straight to the voice and the render."""
+    import copy
+    bad = copy.deepcopy(_GOOD)
+    bad["scenes"][3]["narration"] = "Answer in four words."
+    text, reached, _ = _render_spec(bad)
+    assert "refused" in text and "four words" in text, text
+    assert reached == [], f"reached {reached} with a failing script"
+
+
+def test_from_spec_lets_a_clean_script_through():
+    text, reached, _ = _render_spec(_GOOD)
+    assert reached == ["voice"], (reached, text)
+
+
+def test_rebuild_checks_and_retires_the_old_draft():
+    import copy
+    bad = copy.deepcopy(_GOOD)
+    bad["scenes"][3]["narration"] = "Answer in four words."
+    text, reached, _ = _render_spec(bad, "rebuild", voice_exists=True)
+    assert "refused" in text and reached == [], (text, reached)
+    text, reached, superseded = _render_spec(_GOOD, "rebuild", voice_exists=True)
+    assert reached == ["render"], (reached, text)
+    assert superseded, "the rebuilt draft did not retire the old one"
+
+
+def test_a_price_in_a_title_does_not_hide_a_repeat():
+    """#137 "Best budget car in the UAE under 40,000 dirhams" and #138 "best
+    budget car in uae dubai" were built on consecutive nights. The price
+    words diluted #137's subject to 0.20 against a cooldown of 0.28."""
+    s = _sim("best budget car in uae dubai",
+             "Best budget car in the UAE under 40,000 dirhams")
+    assert s >= D.TOO_SOON, f"only {s:.2f}; these are the same video"
+    s = _sim("best budget car in uae dubai", "Best budget car in UAE Dubai under 40k")
+    assert s >= D.TOO_SOON, f"only {s:.2f} with a '40k' price"
+
+
 def test_a_bike_topic_is_not_a_repeat_of_a_car_video():
     """Dropping "motorcycle" as a stopword turned "motorcycle licence age in
     uae" into {licence, age}, refused as a repeat of a black-points video."""

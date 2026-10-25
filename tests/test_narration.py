@@ -445,6 +445,19 @@ def test_a_cheapest_claim_inside_a_named_brand_is_left_alone():
     assert not S.false_superlative(spec), S.false_superlative(spec)
 
 
+def test_a_title_naming_a_model_scopes_its_cheapest_claim():
+    """"Land Cruiser FJ price compared to other UAE models" was refused for
+    calling the FJ the cheapest CAR. It names the model, not the brand, and
+    the brand-only exemption missed it."""
+    spec = {"title": "Land Cruiser FJ price compared to other UAE models", "scenes": [
+        {"type": "stat", "label": "Starting price", "value": 139900,
+         "narration": "The entry-level FJ is the cheapest at 139,900 dirhams."}]}
+    assert not S.false_superlative(spec), S.false_superlative(spec)
+    # A one-word model is ordinary English: "city car" is not the Honda City.
+    spec["title"] = "Cheapest city car in UAE"
+    assert S.false_superlative(spec), "a market-wide claim lost its check"
+
+
 def test_a_withheld_row_cannot_be_the_cheapest():
     """The Qin Plus EV is marked CONFLICT. usable() must keep it out of
     retrieval, and therefore out of the superlative check's pool."""
