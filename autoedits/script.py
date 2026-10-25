@@ -828,6 +828,55 @@ def false_superlative(spec: dict) -> list[str]:
             + ". Either drop 'cheapest' or use the real cheapest"]
 
 
+# What the writer was told, which must never be what the viewer hears. Six
+# published videos read template text aloud — "Answer in four words." (#30,
+# #37, #81), "Quickly address the hook with facts." and "Ask viewers for
+# their current situation." (#63), "Here's what the price hides." (#5) — and
+# #3 and #23 showed "What the price hides" as an on-screen heading. The
+# CANARIES caught the template's placeholder NUMBERS; nothing caught its words.
+def _template_phrases() -> tuple[set[str], set[str]]:
+    """(long, short): long ones match anywhere; short ones only a whole field."""
+    long_, short = set(), set()
+    for ph in re.findall(r"<([^<>]+)>", SCHEMA_HINT):
+        ph = re.sub(r"\s+", " ", ph.lower().replace("\u2019", "'")).strip(" .")
+        if "|" in ph or "url" in ph or ph in ("angle brackets",):
+            continue
+        # "what the number is" reads like ordinary English, so it only
+        # counts as a leak when it is the whole field.
+        natural = ph in ("what the number is",)
+        (long_ if len(ph.split()) >= 4 and not natural else short).add(ph)
+    long_ |= {"answer in four words", "answer in 4 words", "ask viewers",
+              "ask the viewer", "address the hook", "quickly address",
+              "in four words or less", "one sentence only"}
+    return long_, short
+
+
+_TEMPLATE_LONG, _TEMPLATE_SHORT = _template_phrases()
+
+
+def reads_the_template(spec: dict) -> list[str]:
+    """Lines that repeat the writing template instead of saying something."""
+    bad = []
+    fields = [("title", spec.get("title")), ("kicker", spec.get("kicker"))]
+    for sc in spec.get("scenes") or []:
+        for f in ("title", "label", "text", "narration"):
+            fields.append((f, sc.get(f)))
+        fields += [("bullet", b) for b in sc.get("bullets") or []]
+        fields += [("row", r.get("name")) for r in sc.get("rows") or []]
+        fields += [("note", r.get("note")) for r in sc.get("rows") or []]
+    for name, text in fields:
+        if not text or not isinstance(text, str):
+            continue
+        low = re.sub(r"\s+", " ", text.lower().replace("\u2019", "'")).replace("*", "")
+        whole = low.strip(" .!?")
+        hit = next((p for p in _TEMPLATE_LONG if p in low), None) or \
+            (whole if whole in _TEMPLATE_SHORT else None)
+        if hit:
+            bad.append(f"{_norm(text)[:80]}   -> repeats the writing template "
+                       f"({hit!r}); say the actual thing instead")
+    return bad
+
+
 def scenes_of(spec: dict) -> list[dict]:
     return spec.get("scenes") or []
 
@@ -843,7 +892,8 @@ def _narration_faults(spec: dict, facts: str = "") -> list[str]:
             + misquotes_a_figure(spec) + spells_out_a_price(spec)
             + invents_a_figure(spec, facts)
             + compare_says_nothing(spec) + bullets_say_nothing(spec, facts)
-            + too_long_to_speak(spec) + false_superlative(spec))
+            + too_long_to_speak(spec) + false_superlative(spec)
+            + reads_the_template(spec))
 
 
 # How much of a complaint string to match a narration against. The checks
@@ -979,6 +1029,26 @@ WRITERS = {"groq": _groq, "ollama": _ollama}
 
 
 def generate(query: str, facts: str = "", writer: str | None = None) -> dict:
+    """Write a script for a search query, then check its description.
+
+    The narration has nine checks; the writer's description paragraph had
+    none, and it publishes under the video just the same. Draft #134's said
+    "the cheapest BYD model we found costs 109,900" two lines above its own
+    89,900 Sealion 5. Failing sentences are dropped rather than the whole
+    build: the rest of the description is assembled from scenes that have
+    already passed every check, so it stays honest without them.
+    """
+    spec = _generate(query, facts, writer)
+    dropped = clean_description(spec, facts)
+    if dropped:
+        print(f"    description: dropped {len(dropped)} sentence(s) that failed "
+              f"the figure checks")
+        for d in dropped:
+            print(f"      {d[:150]}")
+    return spec
+
+
+def _generate(query: str, facts: str = "", writer: str | None = None) -> dict:
     """Write a script for a search query.
 
     `facts` is anything you've already verified — rows from data/cars.csv, a
@@ -1211,14 +1281,25 @@ def attach_sources(spec: dict) -> int:
 
         # Each figure carries its own label as context, so a price shared by
         # two cars is cited to the one the scene is actually talking about.
+        # The tracer now needs the car NAMED before it will cite a price, and
+        # a stat label rarely names it ("Cheapest BYD EV price"). The line
+        # spoken over the scene and the video's title usually do.
+        title = spec.get("title", "")
         if s["type"] == "stat":
-            pairs = [(s.get("value"), s.get("label", ""))]
+            pairs = [(s.get("value"),
+                      f"{s.get('label', '')} {s.get('narration', '')} {title}")]
         else:
-            pairs = [(r.get("value"), f"{s.get('title','')} {r.get('name','')}")
+            # Rows named by trim alone ("GXR petrol") need the title to say
+            # which car the trims belong to.
+            pairs = [(r.get("value"),
+                      f"{s.get('title','')} {r.get('name','')} {title}")
                      for r in s.get("rows", [])]
 
+        label = s.get("label", "") if s["type"] == "stat" else s.get("title", "")
         found = {src for src in
-                 (cars.source_for(v, ctx) for v, ctx in pairs) if src}
+                 (cars.source_for(v, ctx, fact_context=f"{label} {ctx}"
+                                  if s["type"] == "compare" else label)
+                  for v, ctx in pairs) if src}
         if found:
             s["source"] = "; ".join(sorted(found))
             filled += 1
@@ -1698,6 +1779,19 @@ def bullets_say_nothing(spec: dict, facts: str = "") -> list[str]:
     return bad
 
 
+def _fact_numbers(facts: str) -> set:
+    """Every number in the facts block, small ones included: "4 black points"
+    is a figure the writer may quote."""
+    out = set()
+    for m in re.findall(r"\d[\d,]*(?:\.\d+)?", facts or ""):
+        try:
+            n = float(m.replace(",", ""))
+        except ValueError:
+            continue
+        out.add(int(n) if n == int(n) else n)
+    return out
+
+
 def _structured_values(spec: dict) -> set:
     out = set()
     for sc in spec.get("scenes") or []:
@@ -1707,6 +1801,21 @@ def _structured_values(spec: dict) -> set:
             if row.get("value") is not None:
                 out.add(int(float(row["value"])))
     return out
+
+
+def _rounds_to(said, sourced: set, shown: set) -> bool:
+    """Is `said` an honest rounding of a sourced figure or an on-screen gap?"""
+    gaps = {abs(a - b) for a in shown for b in sourced} | {a + b for a in shown
+                                                           for b in sourced}
+    for k in (sourced | gaps):
+        if not k:
+            continue
+        if abs(said - k) <= abs(k) * ROUND_TOLERANCE:
+            return True
+        # A round number (200, 1,500) within 5% of the real one.
+        if said % 50 == 0 and abs(said - k) <= abs(k) * 0.05:
+            return True
+    return False
 
 
 def _derivable(said: int, shown: set, sourced: set | None = None) -> bool:
@@ -1728,6 +1837,89 @@ def _derivable(said: int, shown: set, sourced: set | None = None) -> bool:
 
 
 ROUND_TOLERANCE = 0.02         # "under 140,000" for a 139,900 car is honest
+
+
+# Small numbers are mostly not claims — seats, minutes, model years, speeds —
+# which is why PROSE_FLOOR exists. But fines, black points and impound days
+# are small numbers too, and skipping all of them let an invented "600 dirham
+# impound fee" through every check. So a number under the floor is checked
+# when it is attached to money, points or a percentage, or to days, months
+# or years in a sentence about enforcement.
+_UNIT_AFTER = re.compile(
+    r"\s*(?:-\s*)?(dirhams?|aed|black points?|points?|percent|per cent|%"
+    r"|days?|months?|years?)\b", re.I)
+_AED_BEFORE = re.compile(r"(?:aed|dhs?)\s*$", re.I)
+_ENFORCEMENT = re.compile(
+    r"(?i)\b(impound\w*|confiscat\w*|seiz\w*|suspen\w*|jail|prison"
+    r"|ban(?:ned)?|valid\w*|expir\w*|licen[cs]e|fine[sd]?|penalt\w*)\b")
+_WORD_NUM = {w: i for i, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve "
+    "thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split())}
+_WORD_NUM.update({w: 10 * i for i, w in enumerate(
+    "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()) if i > 1})
+_SPELLED = re.compile(
+    r"(?i)\b((?:(?:%s)[\s-]*(?:hundred)?[\s-]*(?:and\s+)?)+)" %
+    "|".join(sorted(_WORD_NUM, key=len, reverse=True)))
+
+
+def _spelled_value(words: str) -> int | None:
+    total, cur = 0, 0
+    for w in re.findall(r"[a-z]+", words.lower()):
+        if w == "and":
+            continue
+        if w == "hundred":
+            cur = max(cur, 1) * 100
+        elif w in _WORD_NUM:
+            cur += _WORD_NUM[w]
+        else:
+            return None
+    total += cur
+    return total
+
+
+def _claimed_figures(text: str) -> list[int]:
+    """Every number in prose that a viewer would take as a stated figure."""
+    text = re.sub(r"https?://\S+", " ", text or "")
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    out = []
+    for sent in sentences:
+        enforce = bool(_ENFORCEMENT.search(sent))
+        found = [(m.start(), m.end(), m.group(1), m.group(2)) for m in
+                 re.finditer(r"(\d[\d,]*(?:\.\d+)?)(k\b)?", sent, re.I)]
+        for m in _SPELLED.finditer(sent):
+            # Part of a spelled price: "two hundred thirty-nine thousand NINE
+            # HUNDRED dirhams" is 239,900, not 900. spells_out_a_price()
+            # owns those; this only reads numbers that stand alone.
+            near = sent[max(0, m.start() - 12):m.end() + 12].lower()
+            if "thousand" in near or "million" in near:
+                continue
+            found.append((m.start(), m.end(), m.group(1), None))
+        for start, end, raw, k in found:
+            if raw[0].isdigit():
+                try:
+                    n = float(raw.replace(",", ""))
+                except ValueError:
+                    continue
+                if k:                        # "AED 20k" is 20,000
+                    n *= 1000
+            else:
+                v = _spelled_value(raw)
+                if v is None:
+                    continue
+                n = float(v)
+            if n >= PROSE_FLOOR:
+                if raw[0].isdigit() and (k or not 1990 <= n <= 2035):
+                    out.append(int(n) if n == int(n) else n)
+                continue
+            unit = _UNIT_AFTER.match(sent, end)
+            money_before = _AED_BEFORE.search(sent[:start])
+            if not unit and not money_before:
+                continue
+            kind = (unit.group(1).lower() if unit else "aed")
+            if kind.startswith(("day", "month", "year")) and not enforce:
+                continue
+            out.append(int(n) if n == int(n) else n)
+    return out
 
 
 def invents_a_figure(spec: dict, facts: str = "") -> list[str]:
@@ -1752,8 +1944,7 @@ def invents_a_figure(spec: dict, facts: str = "") -> list[str]:
     # numbers give ~570 pairwise differences, and 76,900 - 64,900 happens to
     # equal 12,000, which let an invented accessory price through.
     shown = _structured_values(spec)
-    sourced = shown | {int(m.replace(",", ""))
-                       for m in re.findall(r"\d[\d,]{2,}", facts or "")}
+    sourced = shown | _fact_numbers(facts)
     if not sourced:
         return []
     bad = []
@@ -1763,18 +1954,134 @@ def invents_a_figure(spec: dict, facts: str = "") -> list[str]:
         for text in prose:
             if not text:
                 continue
-            for m in re.findall(r"\d[\d,]*", text):
-                said = int(m.replace(",", ""))
-                if said < PROSE_FLOOR or 1990 <= said <= 2035:
-                    continue
+            for said in _claimed_figures(text):
                 if said in sourced or _derivable(said, shown, sourced):
                     continue
-                # A rounded figure is not an invented one.
-                if any(abs(said - k) <= k * ROUND_TOLERANCE for k in sourced):
+                # A rounded figure is not an invented one — including a
+                # rounded GAP: "undercuts it by at least 200" for a 205
+                # difference (36,000 - 35,795) is honest.
+                if _rounds_to(said, sourced, shown):
                     continue
                 bad.append(f"{text[:80]}   -> {said:,} is not in the "
                            f"script or the facts it was given")
     return bad
+
+
+# ------------------------------------------------------------ description --
+
+def _sentences(text: str) -> list[str]:
+    """Split prose into sentences without breaking "109,900" or "12.3"."""
+    parts = re.split(r"(?<=[.!?])\s+|\n+", text or "")
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _prose_numbers(text: str) -> list[int]:
+    """Figures a reader would take as claims. A link is a citation, not a
+    claim. Check-dates need no handling: 2026 is a year and 10 and 07 sit
+    below PROSE_FLOOR."""
+    text = re.sub(r"https?://\S+", " ", text)
+    out = []
+    for m in re.findall(r"\d[\d,]*", text):
+        n = int(m.replace(",", "") or 0)
+        if n >= PROSE_FLOOR and not 1990 <= n <= 2035:
+            out.append(n)
+    return out
+
+
+def _description_superlative(sentence: str, title: str) -> str | None:
+    """Why a "cheapest ... N" sentence is false, or None.
+
+    Unlike false_superlative(), a claim inside a named brand is checked too —
+    against that brand's own rows, and that model family's when one is named
+    ("the cheapest GR"). The exemption for branded titles assumed retrieval
+    fetches the whole brand; #134 showed the writer contradicting the rows it
+    was handed.
+    """
+    from .cars import (load, load_bikes, usable, _tokens, CATEGORY_WORDS,
+                       BIKE_CATEGORY_WORDS, is_bike_query, wants_offroad,
+                       road_bike, STOPWORDS)
+    if not _SUPERLATIVE.search(sentence):
+        return None
+    # "the cheapest new sedan under 40,000" names a ceiling, not a price.
+    # Draft #138 was flagged for calling 40,000 the cheapest until bounds
+    # were taken out of the claim.
+    claim = re.sub(r"(?i)\b(?:under|below|less than|up to|within|over|above"
+                   r"|more than)\s+(?:aed\s+|dhs?\s+)?\d[\d,]*", " ", sentence)
+    nums = _prose_numbers(claim)
+    if not nums:
+        return None
+    claimed = min(nums)
+    bike = is_bike_query(f"{title} {sentence}")
+    rows = [r for r in (load_bikes() if bike else load())
+            if usable(r) and r.get("price_from_aed")]
+    if bike and not wants_offroad(f"{title} {sentence}"):
+        rows = [r for r in rows if road_bike(r)]
+    words = CATEGORY_WORDS | BIKE_CATEGORY_WORDS if bike else CATEGORY_WORDS
+
+    toks = _tokens(sentence)
+    brands = {r["brand"] for r in rows if _tokens(r["brand"]) <= toks}
+    if not brands:                          # "the cheapest model we found ..."
+        brands = {r["brand"] for r in rows if _tokens(r["brand"]) <= _tokens(title)}
+    if brands:
+        rows = [r for r in rows if r["brand"] in brands]
+        family = set()
+        for r in rows:
+            family |= _tokens(r["model"])
+        named = (toks & family) - words - STOPWORDS
+        named = {w for w in named if not w.isdigit()}
+        if named:
+            rows = [r for r in rows if named <= _tokens(r["model"])] or rows
+
+    want = {_CATEGORY_ALIAS.get(w, w) for w in toks & words}
+    pool = [r for r in rows
+            if want <= _tokens(r.get("segment", ""), r.get("powertrain", ""))]
+    cheaper = sorted((r for r in pool if int(r["price_from_aed"]) < claimed),
+                     key=lambda r: int(r["price_from_aed"]))
+    if not cheaper:
+        return None
+    b = cheaper[0]
+    return (f"calls {claimed:,} the cheapest, but the {b['brand']} {b['model']} "
+            f"is {int(b['price_from_aed']):,}")
+
+
+def description_faults(spec: dict, facts: str = "") -> list[tuple[str, str]]:
+    """(sentence, reason) for every sentence of the writer's description
+    paragraph that the narration checks would refuse."""
+    shown = _structured_values(spec)
+    sourced = shown | _fact_numbers(facts)
+    title = spec.get("title") or ""
+    out = []
+    for sent in _sentences(spec.get("description") or ""):
+        why = _description_superlative(sent, title)
+        if not why and sourced:
+            for said in _claimed_figures(sent):
+                if said in sourced or _derivable(said, shown, sourced):
+                    continue
+                if _rounds_to(said, sourced, shown):
+                    continue
+                why = f"{said:,} is not in the script or the facts it was given"
+                break
+        if why:
+            out.append((sent, why))
+    return out
+
+
+def clean_description(spec: dict, facts: str = "") -> list[str]:
+    """Remove failing sentences from spec["description"] in place.
+
+    Returns what was dropped, for the log. Line breaks are kept, because
+    describe() treats a line starting with a link as a citation to strip.
+    """
+    bad = description_faults(spec, facts)
+    if not bad:
+        return []
+    text = spec.get("description") or ""
+    for sent, _ in bad:
+        text = text.replace(sent, "")
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    spec["description"] = text
+    return [f"{sent}   -> {why}" for sent, why in bad]
 
 
 def misquotes_a_figure(spec: dict) -> list[str]:

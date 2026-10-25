@@ -127,6 +127,97 @@ UNCOVERED = ["used car prices in uae", "car mechanic in dubai",
              "traffic fine check online uae", "how to check traffic fine uae"]
 
 
+def test_a_model_the_data_lacks_finds_nothing():
+    """Draft #134, "BYD Seagull price in UAE", was published without ever
+    stating a Seagull price: "seagull" matched no row, "byd" matched fourteen,
+    and the writer was handed other BYDs under a Seagull title."""
+    for q in ("byd seagull uae", "byd leopard 5 review uae",
+              "byd yangwang u8 in uae"):
+        assert not facts_for(q), f"{q!r} was handed rows for other models"
+
+
+def test_a_brand_with_a_generic_word_is_still_covered():
+    """The rule reads the word after the brand. Generic words, years and
+    second brand words must not trip it."""
+    for q in ("byd price in uae", "toyota 2026 price uae", "ducati prices in uae",
+              "land rover defender price uae", "mercedes benz gle price uae",
+              "royal enfield prices in uae", "jetour t1 uae review"):
+        assert facts_for(q), f"{q!r} lost its rows"
+
+
+def test_a_price_is_only_cited_to_the_car_it_belongs_to():
+    """The Qin Plus EV's 74,900 was cited to a Dongfeng AX7, which costs the
+    same. attach_sources() fills missing citations with this, so a matching
+    number from a different car produced a confident, wrong source."""
+    from autoedits.cars import source_for
+    src = source_for(74900, "BYD Qin Plus EV starts at 74,900 dirhams")
+    assert src is None or "Qin" in src, f"cited to another car: {src}"
+    src = source_for(74900, "Dongfeng AX7 price")
+    assert src and "AX7" in src, src
+
+
+def test_a_bare_number_is_not_cited_to_whichever_car_matches():
+    from autoedits.cars import source_for
+    assert source_for(74900, "starting price") is None
+
+
+def test_a_trim_price_is_found_in_its_own_cars_notes():
+    """Trim prices live in the notes ("AT GLX 2.7 petrol 137,900"). With the
+    car named, the notes are a safe place to look."""
+    from autoedits.cars import source_for
+    src = source_for(137900, "Toyota Hilux 2027 AT GLX 2.7 petrol")
+    assert src and "Hilux" in src, src
+
+
+def test_a_rejected_figure_in_the_notes_is_not_a_source():
+    """Seal 7 notes keep the aggregator's wrong 109,900 for the record. It
+    must never vouch for a script that repeats it."""
+    from autoedits.cars import source_for
+    assert source_for(109900, "BYD Seal 7 price") is None
+
+
+def test_auto_citation_cites_the_car_the_script_is_about():
+    """Measured on every saved script before this fix: the FJ was cited to a
+    Honda Accord, a Land Cruiser GXR to a BYD Seal, and Land Cruiser trims to
+    a Dodge Charger and a Genesis G90, all at matching prices."""
+    from autoedits.script import attach_sources
+    spec = {"title": "Land Cruiser hybrid vs petrol in UAE", "scenes": [
+        {"type": "compare", "title": "Petrol vs hybrid, by trim",
+         "rows": [{"name": "GXR petrol", "value": 335900},
+                  {"name": "VXR petrol", "value": 379900}]},
+        {"type": "stat", "label": "Starting price", "value": 154900,
+         "narration": "Land Cruiser FJ GXR starts at 154,900 dirhams."}]}
+    attach_sources(spec)
+    assert "Land Cruiser" in spec["scenes"][0]["source"], spec["scenes"][0]["source"]
+    assert "Charger" not in spec["scenes"][0]["source"]
+    assert "Land Cruiser FJ" in spec["scenes"][1]["source"], spec["scenes"][1]["source"]
+
+
+def test_a_line_naming_no_car_is_traced_only_when_unambiguous():
+    from autoedits.cars import source_for
+    # One row at this price, and it is the kind of car the line says.
+    assert "Arrizo" in (source_for(35795, "The cheapest new sedan starts at 35,795") or "")
+    # "EV" is a claim about the car; a petrol car at the same price is not it.
+    assert source_for(74900, "The cheapest EV starts at 74,900 dirhams") is None
+
+
+def test_an_apostrophe_is_not_a_model_name():
+    """"That's" leaves an "s", which matched the Mercedes S-Class."""
+    from autoedits.cars import source_for
+    src = source_for(69500, "Cheapest Jetour SUV price. That's the sticker price.")
+    assert src and "Jetour" in src, src
+
+
+def test_a_fact_table_is_not_matched_on_the_narration():
+    """"AED 1,000 is the average annual cost" was cited to the 1,000 excess cap."""
+    from autoedits.script import attach_sources
+    spec = {"title": "best car insurance in uae", "scenes": [
+        {"type": "stat", "label": "average annual cost", "value": 1000,
+         "narration": "AED 1,000 is the average annual cost."}]}
+    attach_sources(spec)
+    assert "Excess" not in (spec["scenes"][0].get("source") or ""), spec["scenes"][0]
+
+
 def test_uncovered_stays_empty():
     wrong = [q for q in UNCOVERED if facts_for(q)]
     assert not wrong, f"these have no supporting data and should return nothing: {wrong}"

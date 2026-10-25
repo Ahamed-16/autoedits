@@ -4,6 +4,8 @@
 .env
 token.json
 client_secret.json
+# The renewed Instagram login. Anyone holding it can post as the account.
+ig_token.json
 
 # ------------------------------------------------------------- your voice --
 # Not credentials, but these are the reference recordings Chatterbox clones

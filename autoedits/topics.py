@@ -150,6 +150,16 @@ def seed_evergreen(verbose: bool = True) -> int:
                   "fine if deliberate, worth a look if not:")
             for phrase, reason in odd:
                 print(f"    · {phrase}  ({reason})")
+        # Evergreen lines skip the permanent repeat guard (see next_topics),
+        # so a line that really does duplicate a past video is caught here,
+        # where you can act on it, rather than silently on some later night.
+        repeats = db.repeats_of(phrases)
+        if repeats:
+            print("  These look like videos you have already made, and will "
+                  "be built anyway.\n  Delete or reword the line if it is "
+                  "a true repeat:")
+            for phrase, score, title in repeats:
+                print(f"    · {phrase}  ({score:.2f} against {title!r})")
     elif verbose:
         print(f"No curated topics found at {EVERGREEN_PATH}")
     return len(phrases)

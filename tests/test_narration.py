@@ -512,6 +512,177 @@ def test_the_repair_brief_keeps_the_abbreviation_rule():
     assert "dirhams" in sysmsg and "AED" in sysmsg, sysmsg
 
 
+
+# ------------------------------------------------------------ description --
+
+def _desc_spec(description, title="BYD Seagull price in UAE"):
+    return {"title": title, "description": description, "scenes": [
+        {"type": "compare", "rows": [{"name": "Sealion 5", "value": 89900},
+                                     {"name": "Atto 3", "value": 109900}],
+         "narration": "Sealion 5 starts at 89,900 dirhams."}]}
+
+
+def test_a_false_cheapest_in_the_description_is_dropped():
+    """Draft #134 published "the cheapest BYD model we found costs 109,900"
+    two lines above its own 89,900 Sealion 5. Inside a named brand the claim
+    is checked against that brand's rows."""
+    spec = _desc_spec("The cheapest BYD model we found in the UAE costs 109,900 "
+                      "dirhams. Prices exclude registration and insurance.")
+    dropped = S.clean_description(spec, "")
+    assert dropped and "109,900" in dropped[0], dropped
+    assert "109,900" not in spec["description"], spec["description"]
+    assert "exclude registration" in spec["description"], "a good sentence was lost"
+
+
+def test_true_and_bounded_cheapest_claims_stay():
+    for sent, title in [
+            ("The cheapest BYD electric SUV starts at 109,900 dirhams.", ""),
+            ("The GR 86 is the cheapest at 162,900 dirhams.",
+             "Toyota GR prices in UAE - which one is cheapest"),
+            ("Buy the Chery Arrizo 5 if you want the cheapest new sedan under "
+             "40,000 dirhams.", ""),
+            ("The cheapest motorcycle we found is the Sharmax RST 150 Ultra at "
+             "4,990 dirhams.", "")]:
+        assert S._description_superlative(sent, title) is None, sent
+
+
+def test_an_invented_figure_in_the_description_is_dropped():
+    spec = _desc_spec("Sealion 5 costs 89,900 dirhams. Insurance adds about "
+                      "6,500 a year.", title="BYD Sealion 5 price in UAE")
+    dropped = S.clean_description(spec, "BYD Sealion 5 | from AED 89,900")
+    assert len(dropped) == 1 and "6,500" in dropped[0], dropped
+    assert "89,900" in spec["description"]
+
+
+def test_citations_and_dates_are_not_claims():
+    # A real link carries numbers too: listing IDs, article slugs.
+    spec = _desc_spec("• Sealion 5: 89,900 (https://www.yallamotor.com/new-cars/"
+                      "byd/sealion-5/48213, checked 2026-10-07)",
+                      title="BYD Sealion 5 price")
+    assert not S.description_faults(spec, "from AED 89,900"), \
+        S.description_faults(spec, "from AED 89,900")
+
+
+def test_generate_cleans_the_description():
+    """The check is only a gate if the real entry point runs it."""
+    real = S._generate
+    S._generate = lambda q, facts="", writer=None: _desc_spec(
+        "The cheapest BYD model we found in the UAE costs 109,900 dirhams.")
+    try:
+        import io
+        from contextlib import redirect_stdout
+        with redirect_stdout(io.StringIO()):
+            spec = S.generate("byd price in uae", "")
+    finally:
+        S._generate = real
+    assert "109,900" not in spec["description"], spec["description"]
+
+
+
+# ------------------------------------------------ figures under 1,000 --
+
+_SEATBELT = "Traffic law: Not wearing a seat belt | AED 400 | 4 black points"
+
+
+def _one_line(text, value=400):
+    return {"title": "Seat belt fine in UAE", "scenes": [
+        {"type": "stat", "value": value, "label": "Seat belt fine",
+         "narration": "Skipping the seat belt costs 400 dirhams."},
+        {"type": "verdict", "narration": text}]}
+
+
+def test_a_small_invented_fine_is_caught():
+    """PROSE_FLOOR skipped every number under 1,000, so an invented 600
+    dirham impound fee passed every check. Most fines live under 1,000."""
+    bad = S.invents_a_figure(_one_line(
+        "Do it twice and you pay 800 dirhams plus a 600 dirham impound fee."),
+        _SEATBELT)
+    assert any("-> 600 " in b for b in bad), bad
+    assert not any("-> 800 " in b for b in bad), "400 + 400 is honest arithmetic"
+
+
+def test_invented_black_points_are_caught_in_digits_and_words():
+    for line in ("It also costs 6 black points.", "It also costs six black points."):
+        bad = S.invents_a_figure(_one_line(line), _SEATBELT)
+        assert bad and "-> 6 " in bad[0], (line, bad)
+    for line in ("It also costs 4 black points.", "It also costs four black points."):
+        assert not S.invents_a_figure(_one_line(line), _SEATBELT), line
+
+
+def test_small_numbers_that_are_not_claims_are_left_alone():
+    for line in ("A 7 seat SUV fits the whole family.",
+                 "Check your tyre pressure every 30 days in summer.",
+                 "It takes about 20 minutes at the RTA centre."):
+        assert not S.invents_a_figure(_one_line(line), _SEATBELT), line
+
+
+def test_false_alarms_found_on_past_scripts_stay_quiet():
+    """Each of these was flagged by the first version of the small-figure
+    check, measured across all 140 saved scripts."""
+    facts = ("Land Cruiser 2026 | from AED 239,900\nChery Arrizo 5 | AED 35,795"
+             "\nMitsubishi Attrage | from AED 36,000\nJetour X70 | 84,900"
+             "\nJetour Dashing | 94,900\nJetour X50 | 74,900")
+    spec = {"title": "t", "scenes": [
+        {"type": "compare", "rows": [{"name": "Arrizo 5", "value": 35795},
+                                     {"name": "Attrage", "value": 36000},
+                                     {"name": "Dashing", "value": 94900},
+                                     {"name": "X70", "value": 84900},
+                                     {"name": "X50", "value": 74900}],
+         "narration": "x"},
+        {"type": "verdict", "narration":
+         "The base price is two hundred thirty-nine thousand nine hundred dirhams."},
+        {"type": "bullets", "narration":
+         "The Arrizo 5 undercuts the competition by at least 200 dirhams."},
+        {"type": "question", "narration":
+         "The Dashing is about AED 10k more than the X70 and AED 20k more than the X50."}]}
+    assert not S.invents_a_figure(spec, facts), S.invents_a_figure(spec, facts)
+
+
+def test_an_impound_period_is_a_claim():
+    bad = S.invents_a_figure(_one_line("Your car is impounded for 30 days."),
+                             _SEATBELT)
+    assert bad and "-> 30 " in bad[0], bad
+
+
+def test_a_small_invented_figure_in_the_description_is_dropped():
+    spec = _one_line("Buckle up.")
+    spec["description"] = ("The seat belt fine is 400 dirhams. Repeat offenders "
+                           "pay 750 dirhams.")
+    dropped = S.clean_description(spec, _SEATBELT)
+    assert len(dropped) == 1 and "750" in dropped[0], dropped
+
+
+
+# --------------------------------------------------- template read aloud --
+
+def _leak(field, text, kind="verdict"):
+    return {"title": "Car battery life in UAE", "scenes": [{"type": kind, field: text}]}
+
+
+def test_template_instructions_read_aloud_are_caught():
+    """All of these went out in published videos (#5, #23, #30, #37, #63, #81)."""
+    for field, text, kind in [
+            ("narration", "Quickly address the hook with facts.", "hook"),
+            ("narration", "Ask viewers for their current situation.", "question"),
+            ("narration", "Answer in four words.", "question"),
+            ("narration", "Here's what the price hides.", "bullets"),
+            ("title", "What the price hides", "bullets")]:
+        assert S.reads_the_template(_leak(field, text, kind)), (field, text)
+
+
+def test_ordinary_lines_are_not_template():
+    for text in ("Batteries last two to three years in UAE heat.",
+                 "The excess is what you pay before the insurer pays.",
+                 "Here is what the dealer leaves out of the price.",
+                 "Answer this: would you pay 10,000 more for a hybrid?"):
+        assert not S.reads_the_template(_leak("narration", text)), text
+
+
+def test_the_template_check_runs_with_the_others():
+    assert S._narration_faults(_leak("narration", "Answer in four words.",
+                                     "question"), "")
+
+
 if __name__ == "__main__":
     bad = 0
     for name, fn in sorted(globals().items()):

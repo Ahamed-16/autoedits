@@ -58,6 +58,101 @@ def test_a_bike_topic_is_not_a_repeat_of_a_car_video():
     assert s < D.SAME_TOPIC, f"a bike topic scored {s:.2f} against its car twin"
 
 
+def _queue_db(fn):
+    """Run fn against a throwaway database."""
+    import tempfile
+    old = D.DB_PATH
+    with tempfile.TemporaryDirectory() as tmp:
+        D.DB_PATH = Path(tmp) / "t.db"
+        try:
+            D.init()
+            return fn()
+        finally:
+            D.DB_PATH = old
+
+
+def _made(title):
+    with D.conn() as c:
+        c.execute("INSERT INTO videos(topic_id,status,title,description,tags,"
+                  "scenes,video_path,poster_path,created_at) "
+                  "VALUES (0,'draft',?,'','[]','[]','','',?)", (title, D.now()))
+
+
+def _history():
+    """A history shaped like the channel's: "cost" in many titles, "licence"
+    in one — which is what makes the shared word decide. 30 cost videos also
+    push the licence video out of the ten-night cooldown."""
+    _made("Motorcycle licence age in UAE")
+    for i in range(30):
+        _made(f"Car model {i} running cost in UAE")
+
+
+def test_an_evergreen_line_skips_only_the_permanent_guard():
+    """"motorcycle licence cost" is a different video from "licence age",
+    but scored 0.56 on the shared word and would never have been built."""
+    def run():
+        _history()
+        D.promote_topic("motorcycle licence cost in dubai", "evergreen", 900)
+        return [r["query"] for r in D.next_topics(5)], \
+            D.why_blocked("motorcycle licence cost in dubai")
+    picked, why = _queue_db(run)
+    assert "motorcycle licence cost in dubai" in picked, picked
+    assert why is None, why
+
+
+def test_an_autocomplete_line_keeps_the_permanent_guard():
+    def run():
+        _history()
+        D.promote_topic("motorcycle licence cost in dubai", "autocomplete", 900)
+        return [r["query"] for r in D.next_topics(5)]
+    assert "motorcycle licence cost in dubai" not in _queue_db(run)
+
+
+def test_an_evergreen_line_still_waits_out_the_cooldown():
+    def run():
+        _made("Motorcycle licence age in UAE")
+        D.promote_topic("motorcycle licence cost in dubai", "evergreen", 900)
+        return [r["query"] for r in D.next_topics(5)]
+    assert "motorcycle licence cost in dubai" not in _queue_db(run)
+
+
+def test_loading_the_list_names_a_true_repeat():
+    def run():
+        _made("How to Check Black Points in UAE")
+        return D.repeats_of(["black points uae", "motorcycle helmet fine in uae"])
+    found = _queue_db(run)
+    assert [q for q, _, _ in found] == ["black points uae"], found
+
+
+def test_the_evergreen_loader_prints_the_warning():
+    """Runs the real loader. No other test imported topics.py, and a broken
+    string literal in this warning once got past the whole suite."""
+    from autoedits import topics as T
+    def run():
+        _made("How to Check Black Points in UAE")
+        real = T.load_evergreen
+        T.load_evergreen = lambda: ["black points uae", "motorcycle helmet fine in uae"]
+        try:
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                T.seed_evergreen(verbose=True)
+            return buf.getvalue()
+        finally:
+            T.load_evergreen = real
+    text = _queue_db(run)
+    assert "already made" in text and "black points uae" in text, text
+    assert "helmet" not in text.split("already made", 1)[1], text
+
+
+def test_different_bike_topics_are_not_near_repeats():
+    """The pool marker is not a subject word. Counted, it made every pair of
+    bike topics look related, and one bike video blocked the bike queue."""
+    for q in ("motorcycle helmet fine in uae", "motorcycle insurance cost in uae",
+              "motorcycle red light fine in uae", "ducati prices in uae"):
+        s = _sim(q, "Motorcycle licence age in UAE")
+        assert s < D.TOO_SOON, f"{q!r} scored {s:.2f} against an unrelated bike video"
+
+
 def test_two_wordings_of_one_bike_topic_still_match():
     s = _sim("bike licence age uae", "Motorcycle licence age in UAE")
     assert s >= D.SAME_TOPIC, f"only {s:.2f}; these are the same video"

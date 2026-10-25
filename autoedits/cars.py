@@ -679,6 +679,48 @@ def road_bike(row: dict) -> bool:
     return "off" not in _tokens(row.get("segment", ""))
 
 
+# Words that may follow a brand without naming a model: "byd price in uae",
+# "toyota 2026 lineup". Anything else in that slot is taken as a model name.
+AFTER_BRAND_OK = _fold({
+    "price", "prices", "pricing", "cost", "review", "reviews", "new", "used",
+    "model", "models", "lineup", "range", "offer", "offers", "deal", "deals",
+    "dealer", "dealers", "showroom", "spec", "specs", "latest", "all",
+    "vs", "or", "and", "versus", "truck", "trucks",
+})
+
+
+def missing_model(query: str, rows: list[dict]) -> str | None:
+    """The model a query names that no row in its pool has, or None.
+
+    "byd seagull uae" matched on the brand alone, so the writer was handed a
+    page of OTHER BYDs under a Seagull title. Draft #134 went out as "BYD
+    Seagull price in UAE" and never said what a Seagull costs. The word
+    straight after a brand is the model slot; when it holds a word none of
+    that brand's... none of this pool's models use, the query is about a car
+    this project has no data for, and the honest answer is nothing.
+
+    Measured on the 1,499-topic queue before adding it: the only words in
+    that slot that are neither a model nor generic were "leopard" (3 topics)
+    and "yangwang" (1) — both BYD models with no rows.
+    """
+    brands, models = set(), set()
+    for r in rows:
+        brands |= set(re.findall(r"[a-z0-9]+", r.get("brand", "").lower()))
+        models |= _tokens(r.get("model", "")) | {_squash(r.get("model", ""))}
+    words = re.findall(r"[a-z0-9]+", query.lower())
+    for here, nxt in zip(words, words[1:]):
+        if here not in brands or nxt in brands:
+            continue
+        w = _stem(nxt)
+        if (w in models or w in STOPWORDS or w in AFTER_BRAND_OK
+                or w in CATEGORY_WORDS or w in BIKE_CATEGORY_WORDS
+                or w in FACT_WORDS or w in CHEAP_WORDS
+                or re.fullmatch(r"(19|20)\d\d", w)):
+            continue
+        return nxt
+    return None
+
+
 def facts_for(query: str, limit: int = 12) -> str:
     """Rows relevant to a search query, as text for the writer's prompt.
 
@@ -702,6 +744,8 @@ def facts_for(query: str, limit: int = 12) -> str:
     fact_words = FACT_WORDS | BIKE_FACT_WORDS if bike else FACT_WORDS
     fact_phrases = FACT_PHRASES | BIKE_FACT_PHRASES if bike else FACT_PHRASES
     rows = load_bikes() if bike else load()
+    if missing_model(query, rows):
+        return ""
     if bike and not wants_offroad(query):
         rows = [r for r in rows if road_bike(r)]
 
@@ -900,7 +944,12 @@ def explain(query: str) -> str:
     else:
         out.append("bridges    none fired")
     out.append(f"ranking    {'cheapest first' if cheap else 'best match first'}")
-    if bike and not_motorcycle(query):
+    gone = missing_model(query, load_bikes() if bike else load())
+    if gone:
+        out.append(f"files      none — {gone!r} sits where a model name goes, and no "
+                   f"row has that model. Add its rows to "
+                   f"{'bikes.csv' if bike else 'cars.csv'} to cover it")
+    elif bike and not_motorcycle(query):
         out.append("files      none — bicycles and e-scooters are not motorcycles")
     elif bike:
         out.append("files      bikes.csv" + (" + bike_rules.csv and the motorcycle rows"
@@ -947,7 +996,7 @@ def known_source_urls() -> set[str]:
 MIN_CONTEXT_OVERLAP = 3.0
 
 
-def source_for(value, context: str = "") -> str | None:
+def source_for(value, context: str = "", fact_context: str | None = None) -> str | None:
     """Trace a number back to the row it came from.
 
     The writer is told to cite its figures, but a small local model forgets.
@@ -966,28 +1015,72 @@ def source_for(value, context: str = "") -> str | None:
     except (TypeError, ValueError):
         return None
 
-    ctx = set(re.findall(r"[a-z0-9]+", context.lower()))
+    ctx_tok = _tokens(context) - STOPWORDS
     # Compared against the fact rows below after stopword removal — _tokens
     # keeps every word for other callers, so the filtering happens here.
-    fact_ctx = _tokens(context) - STOPWORDS
+    # The fact tables match on words, so they get the narrow context: the
+    # scene's own label. Handed the whole narration, "AED 1,000 is the
+    # average annual cost" of insurance matched the 1,000 EXCESS cap.
+    fact_ctx = _tokens(context if fact_context is None else fact_context) - STOPWORDS
     best, best_score = None, -1
 
-    for row in load() + load_bikes():
-        if not usable(row):
-            continue
-        matched = any(
-            raw and abs(float(raw) - v) < 1
-            for key in ("price_from_aed", "price_to_aed")
-            for raw in [row.get(key)]
-            if raw and raw.replace(".", "", 1).isdigit()
-        )
-        if not matched:
-            continue
+    # A price belongs to a car, so the car has to be named. Matching on the
+    # number alone cited the Qin Plus EV's 74,900 to a Dongfeng AX7 at the
+    # same price, and attach_sources() hands that citation out unchecked.
+    # The model name counts double: "Toyota" alone does not tell the Hilux
+    # from the Land Cruiser.
+    pool = [r for r in load() + load_bikes() if usable(r)]
 
-        identity = _tokens(row.get("brand", ""), row.get("model", ""))
-        score = len(ctx & identity)
-        if score > best_score:
+    def _model_words(r):
+        brand = _tokens(r.get("brand", "")) - STOPWORDS
+        # "3" and "7" sit in dozens of model names; alone they name nothing.
+        return {w for w in _tokens(r.get("model", "")) - STOPWORDS - brand
+                - CATEGORY_WORDS - BIKE_CATEGORY_WORDS
+                # one letter is an apostrophe, not a model: "That's" left an
+                # "s" that matched the S-Class
+                if len(w) >= 2 and any(c.isalpha() for c in w)}
+
+    # Once the context names a model, the brand alone is not enough. "BYD
+    # Seal 7 price" matched the Atto 3, another BYD at the same 109,900.
+    names_a_model = any(ctx_tok & _model_words(r) for r in pool)
+    for row in pool:
+        brand = _tokens(row.get("brand", "")) - STOPWORDS
+        model_hit = ctx_tok & _model_words(row)
+        if names_a_model and not model_hit:
+            continue
+        # Category words score nothing: "Cheapest BYD EV price" cited a
+        # Chevrolet Captiva EV on the word "ev" outweighing the brand.
+        score = 2 * len(model_hit) + len(ctx_tok & brand)
+        if not score:
+            continue
+        prices = [row.get(k) for k in ("price_from_aed", "price_to_aed")]
+        matched = any(raw and abs(float(raw) - v) < 1 for raw in prices
+                      if raw and raw.replace(".", "", 1).isdigit())
+        # Trim prices are written in the notes ("AT GLX 2.7 petrol 137,900").
+        # The notes also keep figures that were REJECTED ("was 109,900 from an
+        # aggregator; official site says 135,900"), so a notes figure counts
+        # only when it sits inside this row's own from-to range.
+        lo, hi = (float(p) if p else None for p in prices)
+        if not matched and lo and hi and lo <= v <= hi:
+            matched = any(abs(float(n.replace(",", "")) - v) < 1
+                          for n in re.findall(r"\d{1,3}(?:,\d{3})+|\d{4,}",
+                                              row.get("notes", "")))
+        if matched and score > best_score:
             best, best_score = row, score
+
+    # A line that names no car at all ("the cheapest new car starts at
+    # 35,795") can still be traced, but only when exactly one row has that
+    # price AND that row is the kind of car the line says. Otherwise "the
+    # cheapest EV at 74,900" would be pinned on a petrol car that costs it.
+    if best is None and not names_a_model and not any(
+            ctx_tok & (_tokens(r.get("brand", "")) - STOPWORDS) for r in pool):
+        kinds = ctx_tok & (CATEGORY_WORDS | BIKE_CATEGORY_WORDS)
+        same = [r for r in pool
+                if any(r.get(k) and abs(float(r[k]) - v) < 1
+                       for k in ("price_from_aed", "price_to_aed"))
+                and kinds <= _tokens(r.get("segment", ""), r.get("powertrain", ""))]
+        if len(same) == 1:
+            best = same[0]
 
     if best is not None:
         return (f"{best['brand']} {best['model']} — {best['source_url']} "

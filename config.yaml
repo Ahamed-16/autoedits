@@ -206,5 +206,15 @@ topics:
     - crash
     - fake
 
+# Instagram Reels, posted after YouTube from the same approval in the review
+# app. Off until the first test post works:
+#   python -m autoedits.instagram --check         the login
+#   python -m autoedits.instagram --test-tunnel   Instagram can reach this PC
+#   python -m autoedits.instagram --post <id>     one real post, by draft number
+# Videos already on YouTube before this was switched on are never posted
+# automatically.
+instagram:
+  enabled: true
+
 work_dir: work
 db_path: data/autoedits.db

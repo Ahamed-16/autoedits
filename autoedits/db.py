@@ -72,9 +72,28 @@ def conn():
         c.close()
 
 
+# Columns added after the first release. CREATE TABLE IF NOT EXISTS never
+# alters an existing table, so they are added here when missing.
+INSTAGRAM_COLUMNS = (("instagram_id", "TEXT"),
+                     ("ig_status", "TEXT"),     # posted|failed|skipped|NULL
+                     ("ig_note", "TEXT"))
+
+
 def init() -> None:
     with conn() as c:
         c.executescript(SCHEMA)
+        have = {r["name"] for r in c.execute("PRAGMA table_info(videos)")}
+        new = [(n, t) for n, t in INSTAGRAM_COLUMNS if n not in have]
+        for name, kind in new:
+            c.execute(f"ALTER TABLE videos ADD COLUMN {name} {kind}")
+        if new:
+            # The back catalogue stays off Instagram. Sixty videos landing on
+            # a brand-new account in one evening reads as spam, and some of
+            # them (#134) should not be reposted at all. One can still be sent
+            # on purpose: python -m autoedits.instagram --post <id>
+            c.execute("UPDATE videos SET ig_status='skipped', "
+                      "ig_note='published before Instagram was set up' "
+                      "WHERE status='published'")
 
 
 # ------------------------------------------------------------------ topics --
@@ -159,6 +178,13 @@ def _similarity(a: set[str], b: set[str], idf: dict[str, float]) -> float:
     """
     if ("motorcycle" in a) != ("motorcycle" in b):
         return 0.0
+    # The marker has done its job once it has picked the pool. Left in the
+    # score it is a shared word between ANY two bike topics: 0.24 on its own
+    # against a TOO_SOON of 0.28, so "motorcycle helmet fine" (0.34) and
+    # "motorcycle insurance cost" (0.31) were refused as near-repeats of
+    # "motorcycle licence age", and one bike video would have blocked most of
+    # the bike queue for the next ten nights.
+    a, b = a - {"motorcycle"}, b - {"motorcycle"}
     inter = a & b
     if not inter:
         return 0.0
@@ -236,8 +262,18 @@ def next_topics(n: int, match=None) -> list[sqlite3.Row]:
         # Sport price vs Prado and Hybrid in UAE" on {land, cruiser, price}
         # alone — and `fj`, the one word that makes it a different car, is
         # what got outvoted.
+        #
+        # An evergreen line is hand-written too, so it skips SAME_TOPIC — but
+        # only that one. It keeps the ten-night cooldown and the batch guard.
+        # The permanent guard was refusing lines that are plainly different
+        # videos on one shared word: "motorcycle licence cost" scored 0.56
+        # against "motorcycle licence age", and "motorcycle insurance cost"
+        # 0.53 against "licence cost" on the word "cost". The protection it
+        # gave — catching an evergreen line that repeats a past video — now
+        # happens where you can see it: `topics --evergreen` warns at load.
         if r["source"] != "added":
-            if any(_similarity(subj, h, idf) >= SAME_TOPIC for h in hist_subj):
+            if r["source"] != "evergreen" and any(
+                    _similarity(subj, h, idf) >= SAME_TOPIC for h in hist_subj):
                 continue
             if any(_similarity(subj, h, idf) >= TOO_SOON for h in recent):
                 continue
@@ -248,6 +284,34 @@ def next_topics(n: int, match=None) -> list[sqlite3.Row]:
         picked.append(r)
         picked_subj.append(subj)
     return picked
+
+
+def repeats_of(queries: list[str]) -> list[tuple[str, float, str]]:
+    """(query, score, title) for each unused query that the permanent
+    SAME_TOPIC guard would call a repeat of a video already made.
+
+    Evergreen lines no longer stop at that guard, so this is how a line that
+    genuinely duplicates a past video still gets caught: it is named when the
+    list is loaded, and you decide.
+    """
+    with conn() as c:
+        used = {r["query"] for r in c.execute(
+            "SELECT query FROM topics WHERE used_at IS NOT NULL").fetchall()}
+        history = [r["title"] for r in c.execute(
+            "SELECT title FROM videos ORDER BY id DESC").fetchall()]
+    todo = [q.strip().lower() for q in queries if q.strip().lower() not in used]
+    hist_subj = [_subject(t) for t in history]
+    idf = _idf(hist_subj + [_subject(q) for q in todo])
+    out = []
+    for q in todo:
+        subj = _subject(q)
+        if not subj:
+            continue
+        best = max(((_similarity(subj, hs, idf), t)
+                    for hs, t in zip(hist_subj, history)), default=(0.0, ""))
+        if best[0] >= SAME_TOPIC:
+            out.append((q, best[0], best[1]))
+    return out
 
 
 def why_blocked(query: str) -> str | None:
@@ -291,8 +355,10 @@ def why_blocked(query: str) -> str | None:
     if row["source"] == "added":
         return None
 
+    # Mirrors next_topics(): an evergreen line skips the permanent guard and
+    # keeps the cooldown. The repeat is reported when the list is loaded.
     for title, hs in zip(history, hist_subj):
-        if _similarity(subj, hs, idf) >= SAME_TOPIC:
+        if row["source"] != "evergreen" and _similarity(subj, hs, idf) >= SAME_TOPIC:
             return f"too close to a video you already made: {title!r}"
     for title, hs in zip(history[:COOLDOWN], hist_subj[:COOLDOWN]):
         if _similarity(subj, hs, idf) >= TOO_SOON:
@@ -362,6 +428,21 @@ def drafts() -> list[sqlite3.Row]:
         return c.execute(
             "SELECT * FROM videos WHERE status='draft' ORDER BY created_at"
         ).fetchall()
+
+
+def ig_pending() -> list[sqlite3.Row]:
+    """Published to YouTube, not yet tried on Instagram."""
+    with conn() as c:
+        return c.execute(
+            "SELECT * FROM videos WHERE status='published' AND ig_status IS NULL "
+            "ORDER BY published_at").fetchall()
+
+
+def mark_instagram(video_id: int, status: str, media_id: str | None = None,
+                   note: str | None = None) -> None:
+    with conn() as c:
+        c.execute("UPDATE videos SET ig_status=?, instagram_id=?, ig_note=? "
+                  "WHERE id=?", (status, media_id, note, video_id))
 
 
 def approved() -> list[sqlite3.Row]:

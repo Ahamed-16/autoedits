@@ -139,6 +139,12 @@ def upload_approved(limit: int = 5, privacy: str = "public") -> list[tuple[int, 
             done.append((row["id"], yt_id))
         except Exception as exc:                      # noqa: BLE001
             db.set_status(row["id"], "failed", str(exc)[:500])
+    # Instagram follows YouTube, from the same approval. It is off until
+    # instagram.enabled is set in config.yaml, and a failure there is recorded
+    # against Instagram alone: the YouTube upload above stands either way.
+    from . import instagram
+    if instagram.ENABLED and done:
+        instagram.post_pending(limit=len(done))
     return done
 
 
