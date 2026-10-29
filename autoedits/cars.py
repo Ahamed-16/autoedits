@@ -25,7 +25,7 @@ import math
 import re
 import sys
 from functools import lru_cache
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from .config import ROOT
@@ -472,6 +472,19 @@ def age_days(row: dict) -> int | None:
         return None
 
 
+_MONTHS = {m: i for i, m in enumerate(
+    ("january february march april may june july august september october "
+     "november december").split(), 1)}
+
+
+def for_month(row: dict) -> tuple[int, int] | None:
+    """(year, month) when a row's basis is a single month, like "October 2026"."""
+    m = re.fullmatch(r"([A-Za-z]+) (\d{4})", (row.get("basis") or "").strip())
+    if m and m.group(1).lower() in _MONTHS:
+        return int(m.group(2)), _MONTHS[m.group(1).lower()]
+    return None
+
+
 def usable(row: dict) -> bool:
     """A row the writer is allowed to see.
 
@@ -482,12 +495,69 @@ def usable(row: dict) -> bool:
     """
     if (row.get("confidence") or "").upper().startswith("CONFLICT"):
         return False
+    month = for_month(row)
+    if month is not None and month != (date.today().year, date.today().month):
+        # A price set for one month is wrong on the 1st of the next,
+        # however recently it was checked. Age alone let September's fuel
+        # prices through until 8 October.
+        return False
     try:
         limit = int(row.get("stale_days") or STALE_DAYS)
     except ValueError:
         limit = STALE_DAYS
     age = age_days(row)
     return not (age is not None and age > limit)
+
+
+def expires_on(row: dict) -> date | None:
+    """The first day a row is no longer handed to the writer."""
+    month = for_month(row)
+    if month is not None:
+        y, m = month
+        return date(y + (m == 12), m % 12 + 1, 1)
+    try:
+        checked = datetime.strptime(row["checked_on"], "%Y-%m-%d").date()
+        limit = int(row.get("stale_days") or STALE_DAYS)
+    except (ValueError, KeyError, TypeError):
+        return None
+    return checked + timedelta(days=limit + 1)
+
+
+def expiring(within_days: int = 21) -> list[tuple[date, str, dict]]:
+    """(expiry date, file, row) for usable rows that expire soon, earliest first.
+
+    Most rows were gathered in sweeps, so they expire in blocks: on 25 Jan 2027
+    the buildable queue drops from 165 topics to 41 unless the October rows
+    are re-checked first. This is the warning, three weeks ahead.
+    """
+    today = date.today()
+    out = []
+    for name, rows in (("cars.csv", load()), ("bikes.csv", load_bikes()),
+                       ("facts", usable_facts("all"))):
+        for r in rows:
+            if not usable(r):
+                continue
+            d = expires_on(r)
+            if d is not None and (d - today).days <= within_days:
+                out.append((d, name, r))
+    return sorted(out, key=lambda x: x[0])
+
+
+def expiry_warning(within_days: int = 21) -> str | None:
+    soon = expiring(within_days)
+    if not soon:
+        return None
+    by: dict[str, int] = {}
+    for _, name, _ in soon:
+        by[name] = by.get(name, 0) + 1
+    first = soon[0][0]
+    return (f"{len(soon)} rows expire by {soon[-1][0]:%d %b} (first on {first:%d %b}): "
+            + ", ".join(f"{n} in {f}" for f, n in by.items())
+            + ". Re-check them and update checked_on, or the topics they back "
+              "stop being buildable."
+            + (" Monthly prices (fuel) need next month's figures: wam.ae "
+               "publishes them on the last day of the month."
+               if any(for_month(r) for _, _, r in soon) else ""))
 
 
 def describe(row: dict) -> str:
@@ -514,6 +584,9 @@ def describe(row: dict) -> str:
                 f"checked {row.get('checked_on', '?')}]")
     return " | ".join(b for b in bits if b)
 
+
+NEW_CAR_WORDS = _fold({"new", "latest", "price", "prices", "pricing", "cost",
+                       "model", "models"})
 
 CHEAP_WORDS = _fold({"cheap", "cheapest", "budget", "affordable", "value",
                      "under", "lowest", "entry"})
@@ -721,6 +794,71 @@ def missing_model(query: str, rows: list[dict]) -> str | None:
     return None
 
 
+# Words a viewer uses to ask, not to name a subject. They appear in no row
+# and should not count against a phrase.
+INTENT_WORDS = _fold({
+    "which", "cheap", "price", "prices", "cost", "costs", "review", "new",
+    "used", "family", "first", "worth", "good", "top", "budget", "affordable",
+    "expensive", "luxury", "fast", "reliable", "compare", "comparison",
+    "difference", "between", "list", "model", "models", "near", "me",
+    "should", "need", "rules", "rule", "law", "laws", "guide", "explained",
+    "food",
+})
+
+
+@lru_cache(maxsize=2)
+def _subject_vocab(pool: str) -> frozenset[str]:
+    """Every word that names something in this pool's data.
+
+    Names only: brand, model, segment, powertrain, and a fact's category,
+    item and basis. The free-text notes are left out on purpose, because they
+    mention markets, governments and websites in passing, and a phrase about
+    one of those is still not something the data can answer.
+    """
+    v: set[str] = set()
+    for r in (load_bikes() if pool == "bike" else load()):
+        v |= _tokens(r.get("brand", ""), r.get("model", ""),
+                     r.get("segment", ""), r.get("powertrain", ""))
+    for r in usable_facts(pool):
+        v |= _tokens(r.get("category", ""), r.get("item", ""),
+                     r.get("basis", ""))
+    return frozenset(v)
+
+
+def junk_reason(query: str) -> str | None:
+    """Why a harvested phrase should not become a video, or None.
+
+    The harvester asks autocomplete for "<seed> a" ... "<seed> z", so it
+    collects the seed plus whatever word people type next: "car insurance uae
+    login", "best family car in uae kannada", "car maintenance cost dubai
+    airlines", "car tyres uae uae". Each still has data, because the seed
+    matches, so the rows say nothing about the word that made it a different
+    question. Once the queue window was fixed (28 Oct) these were most of what
+    the nightly run would pick.
+
+    The rule: every word must be one the data names, a word for asking, or a
+    stopword. On the queue that day it kept 168 of 495 buildable topics, and
+    the 327 it skipped were languages, countries, "vlog", "yacht", "app" and
+    the like. Topics you add by hand or list as evergreen are not filtered.
+    """
+    words = re.findall(r"[a-z0-9]+", query.lower())
+    for a, b in zip(words, words[1:]):
+        if a == b:
+            return f"repeats the word {a!r}"
+    pool = "bike" if is_bike_query(query) else "car"
+    vocab = _subject_vocab(pool)
+    unknown = [w for w in words
+               if not re.fullmatch(r"\d+", w)
+               and (t := _stem(w)) not in vocab
+               and t not in STOPWORDS and t not in CATEGORY_WORDS
+               and t not in FACT_WORDS and t not in AFTER_BRAND_OK
+               and t not in CHEAP_WORDS and t not in BIKE_CATEGORY_WORDS
+               and t not in INTENT_WORDS]
+    if unknown:
+        return f"the data says nothing about {', '.join(repr(w) for w in unknown)}"
+    return None
+
+
 def facts_for(query: str, limit: int = 12) -> str:
     """Rows relevant to a search query, as text for the writer's prompt.
 
@@ -845,7 +983,14 @@ def facts_for(query: str, limit: int = 12) -> str:
     # words are ALL the query had to say: "cheapest ferrari in uae" keeps the
     # term `ferrari`, finds no row, and is left empty on purpose, because the
     # cheapest rows in this file are not an answer to that question.
-    if not hits and wants_cheap and not (direct - CHEAP_WORDS):
+    #
+    # Every row is a new car, so "new", a model year or "price" adds nothing
+    # to a cheap question. "cheapest new car in uae" found nothing until
+    # 29 Oct because "new" counted as something more to say. "used" is not
+    # neutral: no row is a used car.
+    leftover = {w for w in direct - CHEAP_WORDS
+                if w not in NEW_CAR_WORDS and not re.fullmatch(r"20\d\d", w)}
+    if not hits and wants_cheap and not leftover:
         for row in rows:
             price = int(row.get("price_from_aed") or 0)
             if not usable(row) or not price:
@@ -1179,6 +1324,16 @@ def report() -> int:
         print(f"\nStale, re-check before these can be used again:")
         for r in stale[:10]:
             print(f"  · {r['brand']} {r['model']} (checked {r['checked_on']})")
+
+    if (warn := expiry_warning()):
+        print(f"\n  EXPIRING SOON: {warn}")
+
+    old_month = [r for r in facts if for_month(r) and not usable(r)]
+    if old_month:
+        print("\nMonthly prices for another month, withheld (UAE fuel prices "
+              "change on the 1st):")
+        for r in old_month:
+            print(f"  · {r['item']}: {r['basis']} in {r.get('_file', 'the data')}")
 
     bikes = load_bikes()
     if bikes:

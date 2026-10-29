@@ -174,6 +174,7 @@ with tab_ready:
 
 # ------------------------------------------------------------- performance --
 with tab_perf:
+    st.subheader("YouTube")
     if st.button("Refresh from YouTube"):
         with st.spinner("Fetching stats…"):
             st.success(f"Updated {publish.sync_metrics()} video(s).")
@@ -202,3 +203,49 @@ with tab_perf:
             "not now. To see every counter side by side and find out which "
             "one is off, run `python -m autoedits.reconcile`.]"
         )
+
+    # ------------------------------------------------------ instagram --
+    st.divider()
+    st.subheader("Instagram")
+    if st.button("Refresh from Instagram"):
+        from autoedits import instagram
+        with st.spinner("Fetching Instagram stats…"):
+            try:
+                res = instagram.sync_metrics()
+            except instagram.InstagramError as exc:
+                st.error(f"Instagram stats failed: {exc}")
+            else:
+                st.success(f"Updated {res['updated']} post(s).")
+                if res["gone"]:
+                    st.warning("No longer on Instagram: " +
+                               ", ".join(f"#{i}" for i in res["gone"]))
+                if res["no_insights"]:
+                    st.warning(
+                        "Only likes and comments were available. Views, reach, "
+                        "saves, shares and watch time need the "
+                        "instagram_business_manage_insights permission: add it "
+                        "in the app dashboard, generate a new token and put it "
+                        "in .env.")
+                if res["stopped"]:
+                    st.error(f"Stopped: {res['stopped']}")
+
+    ig = db.ig_performance()
+    if not ig:
+        st.info("Nothing posted to Instagram yet.")
+    else:
+        st.dataframe(
+            [{"#": r["id"], "Title": r["title"], "Views": r["views"],
+              "Reach": r["reach"], "Likes": r["likes"],
+              "Comments": r["comments"], "Saves": r["saved"],
+              "Shares": r["shares"],
+              "Avg watch (s)": (round(r["avg_watch_ms"] / 1000, 1)
+                                if r["avg_watch_ms"] is not None else None),
+              "Like %": r["like_rate"],
+              "Checked": (r["checked_at"] or "")[:16].replace("T", " ")}
+             for r in ig],
+            use_container_width=True, hide_index=True)
+        st.caption(
+            "Blank means Instagram has not reported that number yet; a new "
+            "Reel can take up to 48 hours. Saves and shares are the strongest "
+            "signal on Instagram, and average watch time against the Reel's "
+            "length tells you where people drop off.")

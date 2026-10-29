@@ -52,6 +52,23 @@ CREATE TABLE IF NOT EXISTS metrics (
     comments     INTEGER
 );
 
+-- Instagram numbers, kept apart from YouTube's so neither overwrites the
+-- other. Any column may be NULL: views, reach, saves, shares and watch time
+-- need the instagram_business_manage_insights permission, and Meta returns
+-- nothing at all for a Reel's first day or so instead of a zero.
+CREATE TABLE IF NOT EXISTS ig_metrics (
+    id           INTEGER PRIMARY KEY,
+    video_id     INTEGER REFERENCES videos(id),
+    checked_at   TEXT NOT NULL,
+    views        INTEGER,
+    reach        INTEGER,
+    likes        INTEGER,
+    comments     INTEGER,
+    saved        INTEGER,
+    shares       INTEGER,
+    avg_watch_ms INTEGER
+);
+
 CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status);
 CREATE INDEX IF NOT EXISTS idx_topics_score  ON topics(score DESC);
 """
@@ -253,7 +270,14 @@ def next_topics(n: int, match=None) -> list[sqlite3.Row]:
         rows = c.execute(
             "SELECT * FROM topics WHERE used_at IS NULL "
             "ORDER BY score DESC, demand DESC").fetchall()
-        cands = [r for r in rows if match is None or match(r["query"])][:400]
+        # Stop at 400: `match` may be expensive (the pipeline passes a data
+        # check), and nothing past the window is looked at anyway.
+        cands = []
+        for r in rows:
+            if match is None or match(r["query"]):
+                cands.append(r)
+                if len(cands) == 400:
+                    break
         history = [r["title"] for r in c.execute(
             "SELECT title FROM videos ORDER BY id DESC").fetchall()]
 
@@ -306,6 +330,14 @@ def next_topics(n: int, match=None) -> list[sqlite3.Row]:
         picked.append(r)
         picked_subj.append(subj)
     return picked
+
+
+def hand_written() -> set[str]:
+    """Queued phrases you wrote yourself: added by hand or evergreen."""
+    with conn() as c:
+        return {r["query"] for r in c.execute(
+            "SELECT query FROM topics WHERE used_at IS NULL "
+            "AND source IN ('added','evergreen')").fetchall()}
 
 
 def repeats_of(queries: list[str]) -> list[tuple[str, float, str]]:
@@ -485,6 +517,18 @@ def set_status(video_id: int, status: str, note: str | None = None) -> None:
                   (status, note, now(), video_id))
 
 
+def note_video(video_id: int, note: str) -> None:
+    """Record why something happened without changing the video's status."""
+    with conn() as c:
+        c.execute("UPDATE videos SET note=? WHERE id=?", (note, video_id))
+
+
+def failed() -> list[sqlite3.Row]:
+    with conn() as c:
+        return c.execute("SELECT * FROM videos WHERE status='failed' "
+                         "ORDER BY id").fetchall()
+
+
 def update_meta(video_id: int, title: str, description: str) -> None:
     with conn() as c:
         c.execute("UPDATE videos SET title=?, description=? WHERE id=?",
@@ -517,4 +561,39 @@ def performance() -> list[sqlite3.Row]:
                 ORDER BY checked_at DESC LIMIT 1)
             WHERE v.status='published'
             ORDER BY v.published_at DESC
+        """).fetchall()
+
+
+IG_FIELDS = ("views", "reach", "likes", "comments", "saved", "shares",
+             "avg_watch_ms")
+
+
+def ig_posted() -> list[sqlite3.Row]:
+    """Everything on Instagram, including back-catalogue videos sent by hand."""
+    with conn() as c:
+        return c.execute("SELECT * FROM videos WHERE instagram_id IS NOT NULL "
+                         "ORDER BY id").fetchall()
+
+
+def record_ig_metrics(video_id: int, stats: dict) -> None:
+    with conn() as c:
+        c.execute(f"INSERT INTO ig_metrics(video_id,checked_at,{','.join(IG_FIELDS)})"
+                  f" VALUES (?,?,{','.join('?' * len(IG_FIELDS))})",
+                  (video_id, now(), *(stats.get(k) for k in IG_FIELDS)))
+
+
+def ig_performance() -> list[sqlite3.Row]:
+    """Latest Instagram numbers per posted video, newest post first."""
+    with conn() as c:
+        return c.execute("""
+            SELECT v.id, v.title, v.instagram_id, v.published_at,
+                   m.views, m.reach, m.likes, m.comments, m.saved, m.shares,
+                   m.avg_watch_ms, m.checked_at,
+                   ROUND(100.0 * m.likes / NULLIF(m.views,0), 2) AS like_rate
+            FROM videos v
+            LEFT JOIN ig_metrics m ON m.id = (
+                SELECT id FROM ig_metrics WHERE video_id = v.id
+                ORDER BY checked_at DESC, id DESC LIMIT 1)
+            WHERE v.instagram_id IS NOT NULL
+            ORDER BY v.id DESC
         """).fetchall()

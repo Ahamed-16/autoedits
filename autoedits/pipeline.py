@@ -103,10 +103,30 @@ def run(n: int | None = None) -> list[int]:
     # can't be cited is discarded, and on a CPU-only box that discard costs
     # six minutes of writing — so it's worth spending a millisecond up front
     # checking whether cars.csv has anything to say about the subject.
+    #
+    # The check has to happen BEFORE the queue's 400-topic window is cut, not
+    # after. On 28 Oct, 349 of the top 400 were repeats of videos already
+    # made and the 51 left were mostly phrases with no data, so the run
+    # built no car video for five nights while 495 buildable topics sat
+    # further down. Harvested phrases must also pass cars.junk_reason, or the
+    # window fills with "car insurance uae login" instead.
     is_bike = cars.is_bike_query
-    candidates = db.next_topics(n * 10, match=lambda q: not is_bike(q))
-    bike_cands = db.next_topics(10, match=is_bike) if BIKE_SLOTS else []
-    if not candidates and not bike_cands:
+    mine = db.hand_written()
+
+    def buildable(q: str) -> bool:
+        return bool(facts_for(q)) and (q in mine or not cars.junk_reason(q))
+
+    if (warn := cars.expiry_warning()):
+        print(f"WARNING: {warn}")
+
+    # The plain queue, before the data check: what the rows-to-add list below
+    # is drawn from, and how an empty queue is told apart from a full one
+    # with nothing buildable in it.
+    plain = db.next_topics(n * 10, match=lambda q: not is_bike(q))
+    candidates = db.next_topics(n * 10, match=lambda q: not is_bike(q) and buildable(q))
+    bike_cands = (db.next_topics(10, match=lambda q: is_bike(q) and buildable(q))
+                  if BIKE_SLOTS else [])
+    if not plain and not candidates and not bike_cands:
         print("No topics queued. Run: python -m autoedits.topics")
         return []
 
@@ -129,20 +149,25 @@ def run(n: int | None = None) -> list[int]:
     # fill the required field. That is what 74 binned drafts looked like.
     #
     # So the quota does NOT get topped up. Fewer drafts beats hollow ones.
-    covered = [r for r in candidates if facts_for(r["query"])]
-    uncovered = [r["query"] for r in candidates if not facts_for(r["query"])]
+    covered = candidates          # every candidate passed buildable()
+    # The rows-to-add list below is drawn from the plain queue, highest
+    # demand first, as before: those are the subjects worth adding data for.
+    # Junk is left out of it, or it would ask for rows about "login".
+    uncovered = [r["query"] for r in plain
+                 if not facts_for(r["query"])
+                 and (r["query"] in mine or not cars.junk_reason(r["query"]))]
     topics = bikes + covered[:n_cars]
 
     if topics:
-        print(f"{len(covered)} of {len(candidates)} queued topics have data in "
-              f"cars.csv; building {len(topics)}"
+        print(f"{len(covered)} buildable car topic{'' if len(covered) == 1 else 's'} "
+              f"in the queue; building {len(topics)}"
               + (f", {len(bikes)} of them a motorcycle topic." if bikes else "."))
         if len(topics) < n:
             print(f"    ({n - len(topics)} fewer than the nightly target — the "
                   f"rest have no supporting data and were left queued.)")
     else:
-        print(f"None of the top {len(candidates)} queued topics have data in "
-              f"cars.csv, so nothing was built — a script with no figures is "
+        print(f"No queued topic has data in cars.csv and clears the repeat "
+              f"guards, so nothing was built — a script with no figures is "
               f"not worth the render time.\n"
               f"  Add rows to data/cars.csv for a subject you have queued, or "
               f"queue topics your data covers: python -m autoedits.topics")

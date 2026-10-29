@@ -696,6 +696,24 @@ def test_the_template_check_runs_with_the_others():
                                      "question"), "")
 
 
+def test_a_long_fact_list_is_trimmed_to_leave_the_reply_room():
+    """19 of 173 buildable topics (mostly Ducati) were refused outright on
+    29 Oct: their facts left under 2,200 tokens for the reply."""
+    import io
+    from contextlib import redirect_stdout
+    from autoedits import script as S
+    rows = [f"Ducati row {i} | " + "long trim note " * 40 for i in range(12)]
+    build = lambda f: f"Search query\n{f}\n{S.SCHEMA_HINT}"
+    assert S._reply_room(build("\n".join(rows))) < S.MIN_COMPLETION
+    with redirect_stdout(io.StringIO()):
+        out = S.fit_facts("\n".join(rows), build).splitlines()
+    assert S._reply_room(build("\n".join(out))) >= S.REPLY_TARGET
+    assert out == rows[:len(out)], "kept rows must be the top-ranked ones"
+    assert len(out) >= S.MIN_FACT_ROWS
+    short = "\n".join(rows[:2])
+    assert S.fit_facts(short, build) == short
+
+
 if __name__ == "__main__":
     bad = 0
     for name, fn in sorted(globals().items()):

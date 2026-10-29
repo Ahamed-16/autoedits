@@ -5,6 +5,7 @@ Instagram Reels upload, through the Instagram API with Instagram Login.
     python -m autoedits.instagram --test-tunnel  # can Instagram reach this PC? posts nothing
     python -m autoedits.instagram --post 140     # post one video, by draft number
     python -m autoedits.instagram --pending      # post every new YouTube upload
+    python -m autoedits.instagram --stats        # views, likes, comments... into the DB
 
 Like publish.py, nothing here runs on its own: only videos you approved in
 the review app are ever posted.
@@ -59,30 +60,55 @@ POLL_LIMIT = 60            # ten minutes; a 30-second Reel takes well under one
 
 
 class InstagramError(RuntimeError):
-    pass
+    def __init__(self, message: str, code=None):
+        super().__init__(message)
+        self.code = code
+
+
+# Errors that say nothing about the video: the login, the account, Meta's
+# rate limits, or the tunnel. The video should stay queued, not be marked
+# failed. 200 is what Meta returned when it put the developer account on
+# hold on 26 Oct ("API access blocked"); #141 and #142 were marked failed
+# and would never have been posted.
+ACCESS_CODES = {4, 10, 17, 32, 190, 200, 368, 613, "tunnel"}
+
+
+def is_access_problem(exc: Exception) -> bool:
+    return isinstance(exc, InstagramError) and exc.code in ACCESS_CODES
 
 
 def _now() -> float:
     return datetime.now(timezone.utc).timestamp()
 
 
+def _env_hash(token: str) -> str:
+    import hashlib
+    return hashlib.sha256(token.encode()).hexdigest()[:16]
+
+
 def _load() -> dict:
-    """{"token": ..., "issued": epoch seconds or None}. Never printed."""
+    """{"token", "issued", "env_hash"}. Never printed.
+
+    ig_token.json (the renewed token) is preferred, unless .env now holds a
+    different token than the one it was renewed from: that means a new token
+    was pasted, for example after adding a permission, and it must be used.
+    """
+    env = os.getenv("INSTAGRAM_ACCESS_TOKEN", "").strip()
     if TOKEN_FILE.exists():
         data = json.loads(TOKEN_FILE.read_text())
-        if data.get("token"):
+        if data.get("token") and (not env or data.get("env_hash") == _env_hash(env)):
             return data
-    token = os.getenv("INSTAGRAM_ACCESS_TOKEN", "").strip()
-    if not token:
+    if not env:
         raise InstagramError(
             "No Instagram token. Add INSTAGRAM_ACCESS_TOKEN=... to .env "
             "(App Dashboard -> Instagram -> API setup with Instagram login -> "
             "Generate token).")
-    return {"token": token, "issued": None}
+    return {"token": env, "issued": None, "env_hash": _env_hash(env)}
 
 
-def _save(token: str) -> None:
-    TOKEN_FILE.write_text(json.dumps({"token": token, "issued": _now()}))
+def _save(token: str, env_hash: str | None = None) -> None:
+    TOKEN_FILE.write_text(json.dumps({"token": token, "issued": _now(),
+                                      "env_hash": env_hash}))
     try:
         TOKEN_FILE.chmod(0o600)
     except OSError:
@@ -105,7 +131,8 @@ def _call(method: str, path: str, token: str, **params) -> dict:
         # do not echo it, and nothing here formats the URL into one.
         raise InstagramError(f"{err.get('message', 'request failed')} "
                              f"(code {err.get('code')}, "
-                             f"subcode {err.get('error_subcode')})")
+                             f"subcode {err.get('error_subcode')})",
+                             code=err.get("code"))
     return body
 
 
@@ -121,7 +148,7 @@ def token() -> str:
         try:
             body = _call("GET", "refresh_access_token", data["token"],
                          grant_type="ig_refresh_token")
-            _save(body["access_token"])
+            _save(body["access_token"], data.get("env_hash"))
             return body["access_token"]
         except InstagramError:
             if age_days is not None and age_days >= 59:
@@ -277,7 +304,7 @@ def public_url(video_path: str):
     """Yield a public HTTPS URL for one file; close everything afterwards."""
     exe = shutil.which("cloudflared")
     if not exe:
-        raise InstagramError(
+        raise InstagramError(code="tunnel", message=
             "cloudflared is not installed. Install it once with:\n"
             "  curl -L -o /tmp/cloudflared.deb https://github.com/cloudflare/"
             "cloudflared/releases/latest/download/cloudflared-linux-amd64.deb\n"
@@ -305,10 +332,11 @@ def public_url(video_path: str):
                and proc.poll() is None):
             time.sleep(0.5)
         if errors and not found:
-            raise InstagramError(f"cloudflared could not open a tunnel: {errors[0]}")
+            raise InstagramError(f"cloudflared could not open a tunnel: {errors[0]}",
+                                 code="tunnel")
         if not found:
             raise InstagramError("cloudflared did not open a tunnel within "
-                                 f"{TUNNEL_WAIT} seconds")
+                                 f"{TUNNEL_WAIT} seconds", code="tunnel")
         url = f"{found[0]}/{name}"
         deadline = time.time() + REACH_WAIT
         while True:                # a new address takes a moment to resolve
@@ -320,7 +348,8 @@ def public_url(video_path: str):
                 pass
             if time.time() > deadline:
                 raise InstagramError("the tunnel opened but the video was not "
-                                     f"reachable from outside after {REACH_WAIT}s")
+                                     f"reachable from outside after {REACH_WAIT}s",
+                                     code="tunnel")
             time.sleep(3)
         yield url
     finally:
@@ -365,7 +394,10 @@ def post(video_id: int) -> str:
     try:
         media = post_video(row)
     except Exception as exc:                          # noqa: BLE001
-        db.mark_instagram(video_id, "failed", None, str(exc)[:500])
+        # An access problem leaves the video pending, so --pending or the
+        # next upload picks it up once access is back.
+        status = None if is_access_problem(exc) else "failed"
+        db.mark_instagram(video_id, status, None, str(exc)[:500])
         raise
     db.mark_instagram(video_id, "posted", media)
     return media
@@ -386,9 +418,151 @@ def post_pending(limit: int = 5) -> list[tuple[int, str]]:
             db.mark_instagram(row["id"], "posted", media)
             done.append((row["id"], media))
         except Exception as exc:                      # noqa: BLE001
+            if is_access_problem(exc):
+                # Not this video's fault, and the next one would hit the
+                # same wall. Leave it pending and stop.
+                db.mark_instagram(row["id"], None, None, str(exc)[:500])
+                print(f"  Instagram is not reachable right now: {str(exc)[:200]}\n"
+                      f"  Nothing was marked failed; these posts stay queued. "
+                      f"Fix access, then run: python -m autoedits.instagram --pending")
+                break
             db.mark_instagram(row["id"], "failed", None, str(exc)[:500])
             print(f"  Instagram failed for draft #{row['id']}: {str(exc)[:200]}")
     return done
+
+
+# ------------------------------------------------------------------ stats --
+
+# What a Reel reports, by the name Meta uses. ig_reels_avg_watch_time is in
+# milliseconds. Asking for a metric a media type does not have fails the
+# whole request, so this list is for Reels only, which is all we post.
+INSIGHT_METRICS = {"views": "views", "reach": "reach", "likes": "likes",
+                   "comments": "comments", "saved": "saved", "shares": "shares",
+                   "ig_reels_avg_watch_time": "avg_watch_ms"}
+
+INSIGHTS_PERMISSION = "instagram_business_manage_insights"
+
+
+def _no_insights_permission(exc: InstagramError) -> bool:
+    msg = str(exc).lower()
+    return exc.code == 10 or "permission" in msg or "manage_insights" in msg
+
+
+def _gone(exc: InstagramError) -> bool:
+    """Deleted on Instagram: (#100) ... does not exist (subcode 33)."""
+    return exc.code == 100 and ("does not exist" in str(exc) or "subcode 33" in str(exc))
+
+
+def _insight_values(body: dict) -> dict:
+    out = {}
+    for item in body.get("data") or []:
+        key = INSIGHT_METRICS.get(item.get("name"))
+        if not key:
+            continue
+        vals = item.get("values") or []
+        val = vals[0].get("value") if vals else (item.get("total_value") or {}).get("value")
+        if isinstance(val, (int, float)):
+            out[key] = int(val)
+    return out
+
+
+def media_stats(media_id: str, tok: str, insights: bool = True) -> tuple[dict, str | None]:
+    """(stats, why insights were unavailable). Missing numbers are left out.
+
+    Likes and comments come from the media itself, which needs only the
+    permission already granted. Everything else needs the insights
+    permission; without it the likes and comments are still returned.
+    """
+    base = _call("GET", media_id, tok, fields="like_count,comments_count")
+    stats = {"likes": base.get("like_count"), "comments": base.get("comments_count")}
+    stats = {k: v for k, v in stats.items() if v is not None}
+    if not insights:
+        return stats, None
+    try:
+        body = _call("GET", f"{media_id}/insights", tok,
+                     metric=",".join(INSIGHT_METRICS))
+    except InstagramError as exc:
+        if _no_insights_permission(exc) and not is_blocked(exc):
+            return stats, str(exc)
+        raise
+    # Insights win where both exist: like_count can be hidden by the owner.
+    stats.update(_insight_values(body))
+    return stats, None
+
+
+def is_blocked(exc: InstagramError) -> bool:
+    """The account hold of 26 Oct, as opposed to a missing permission."""
+    return "blocked" in str(exc).lower()
+
+
+def sync_metrics() -> dict:
+    """Pull the latest numbers for every posted Reel into ig_metrics.
+
+    Returns {"updated", "gone", "no_insights", "stopped"}. A deleted post is
+    reported and skipped. An access problem stops the run, because every
+    later call would fail the same way.
+    """
+    db.init()
+    rows = db.ig_posted()
+    result = {"updated": 0, "gone": [], "no_insights": None, "stopped": None}
+    if not rows:
+        return result
+    tok = token()
+    insights = True
+    for row in rows:
+        try:
+            stats, why = media_stats(row["instagram_id"], tok, insights)
+        except InstagramError as exc:
+            if _gone(exc):
+                result["gone"].append(row["id"])
+                continue
+            if is_access_problem(exc):
+                result["stopped"] = str(exc)[:300]
+                break
+            raise
+        if why:
+            # Asked once, refused once: the rest would be refused too.
+            insights, result["no_insights"] = False, why
+        if stats:
+            db.record_ig_metrics(row["id"], stats)
+            result["updated"] += 1
+    return result
+
+
+def _fmt(v, watch=False):
+    if v is None:
+        return "-"
+    return f"{v / 1000:.1f}s" if watch else f"{v:,}"
+
+
+def stats_report() -> int:
+    try:
+        res = sync_metrics()
+    except InstagramError as exc:
+        print(f"\n  Instagram stats failed: {exc}\n")
+        return 1
+    rows = [r for r in db.ig_performance() if r["checked_at"]]
+    print(f"\n  {'#':>4}  {'views':>7} {'reach':>7} {'likes':>6} {'comm':>5} "
+          f"{'saves':>5} {'shares':>6} {'watch':>6}  title")
+    for r in rows:
+        print(f"  {r['id']:>4}  {_fmt(r['views']):>7} {_fmt(r['reach']):>7} "
+              f"{_fmt(r['likes']):>6} {_fmt(r['comments']):>5} {_fmt(r['saved']):>5} "
+              f"{_fmt(r['shares']):>6} {_fmt(r['avg_watch_ms'], True):>6}  "
+              f"{(r['title'] or '')[:40]}")
+    print(f"\n  updated {res['updated']} post(s).")
+    if res["gone"]:
+        print(f"  no longer on Instagram (deleted?): "
+              f"{', '.join('#' + str(i) for i in res['gone'])}")
+    if res["no_insights"]:
+        print(f"  Views, reach, saves, shares and watch time need the "
+              f"{INSIGHTS_PERMISSION}\n  permission. Add it under Permissions and "
+              f"features in the app dashboard, generate\n  a new token, and put it "
+              f"in .env. The new token is picked up automatically.")
+    if res["stopped"]:
+        print(f"  Stopped: Instagram is not reachable right now: {res['stopped']}")
+        return 1
+    print("  A Reel's numbers can take up to 48 hours to appear; '-' means none yet.\n")
+    return 0
 
 
 def test_tunnel() -> int:
@@ -424,6 +598,8 @@ if __name__ == "__main__":
             raise SystemExit(1)
         print(f"\n  draft #{vid} posted to Instagram (media {media})\n")
         raise SystemExit(0)
+    if "--stats" in args or "--metrics" in args:
+        raise SystemExit(stats_report())
     if "--pending" in args:
         done = post_pending()
         for vid, media in done:

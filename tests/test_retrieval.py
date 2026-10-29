@@ -51,9 +51,16 @@ CASES: list[tuple[str, list[str], list[str]]] = [
     # Price-ranked questions. These are about RANKING, which is why each one
     # names the row that must lead: a cheapest-X video whose first figure is
     # not the cheapest X is wrong in the one way the title promises.
-    ("cheapest cars in uae", ["Arrizo"], []),
-    ("budget cars in uae", ["Arrizo"], []),
-    ("best budget car in dubai", ["Arrizo"], []),
+    #
+    # These named the Arrizo 5 at 35,795 until 29 Oct. Chery UAE's own price
+    # is 57,900; the 35,795 came from carswitch and was in two published
+    # videos. The test followed the data, and the data was wrong.
+    ("cheapest cars in uae", ["Mirage"], ["Arrizo"]),
+    ("budget cars in uae", ["Mirage"], ["Arrizo"]),
+    ("best budget car in dubai", ["Mirage"], ["Arrizo"]),
+    # "new" stopped the cheapest-rows fallback, so this found nothing.
+    ("cheapest new car in uae", ["Mirage"], []),
+    ("cheapest new cars in uae 2026", ["Mirage"], []),
     # Led by four petrol SUVs, because price sorted ahead of match quality.
     ("cheapest electric suv in uae", ["Spark EUV"], ["Petrol"]),
     # And then by a MINI Cooper ELECTRIC at AED 235,000, because "electric"
@@ -196,7 +203,7 @@ def test_auto_citation_cites_the_car_the_script_is_about():
 def test_a_line_naming_no_car_is_traced_only_when_unambiguous():
     from autoedits.cars import source_for
     # One row at this price, and it is the kind of car the line says.
-    assert "Arrizo" in (source_for(35795, "The cheapest new sedan starts at 35,795") or "")
+    assert "Alsvin" in (source_for(42900, "The cheapest new sedan starts at 42,900") or "")
     # "EV" is a claim about the car; a petrol car at the same price is not it.
     assert source_for(74900, "The cheapest EV starts at 74,900 dirhams") is None
 
@@ -230,6 +237,75 @@ def test_a_category_query_is_never_led_by_a_name_match():
         lead = facts_for(q).splitlines()[0]
         assert not any(w in lead for w in ("MINI Cooper", "Porsche", "Hummer")), (
             f"{q!r} is led by a name match: {lead[:80]}")
+
+
+def test_a_monthly_price_expires_with_its_month():
+    """UAE fuel prices change on the 1st. September's rows were checked on
+    7 Sep and, judged by age alone, were quoted as current until 8 Oct."""
+    from datetime import date, timedelta
+    from autoedits import cars
+    today = date.today()
+    this = today.strftime("%B %Y")
+    last = (today.replace(day=1) - timedelta(days=1)).strftime("%B %Y")
+    yesterday = (today - timedelta(days=1)).isoformat()
+    row = {"category": "Fuel price", "item": "Diesel", "value_from": "4.80",
+           "checked_on": yesterday, "stale_days": "31", "confidence": "cross-checked"}
+    assert cars.usable({**row, "basis": this}), "this month's price was withheld"
+    assert not cars.usable({**row, "basis": last}), "last month's price was used"
+    # A basis that is not a month is judged by age, as before.
+    assert cars.usable({**row, "basis": "per litre"})
+
+
+def test_the_fuel_rows_are_this_months():
+    """Fails on the 1st of each month until the new prices are added."""
+    from autoedits import cars
+    fuel = [r for r in cars.usable_facts() if r.get("category") == "Fuel price"]
+    assert len(fuel) == 4, f"{len(fuel)} fuel rows"
+    stale = [r["item"] for r in fuel if not cars.usable(r)]
+    assert not stale, (f"fuel prices out of date: {stale}. Look up this month's "
+                       f"prices (wam.ae) and update data/ownership.csv")
+
+
+def test_rows_contradicted_by_the_official_price_are_withheld():
+    """29 Oct check of the 28 aggregator rows that lead a 'cheapest' claim."""
+    from autoedits.cars import facts_for, load, usable
+    rows = {(r["brand"], r["model"]): r for r in load()}
+    for key in [("Toyota", "C-HR"), ("BAIC", "X55"), ("Hyundai", "Venue"),
+                ("Geely", "EX5"), ("GAC", "Aion ES"), ("Mitsubishi", "Attrage")]:
+        assert not usable(rows[key]), f"{key} is still handed to the writer"
+    assert rows[("Chery", "Arrizo 5")]["price_from_aed"] == "57900"
+    # The EV tier rested on two mislabelled rows; it now leads with the one
+    # price the manufacturer publishes.
+    ev = facts_for("cheapest electric car in dubai").splitlines()
+    assert ev and "Spark EUV" in ev[0], ev[:2]
+    assert not any("Aion ES" in l or "Geely EX5 " in l for l in ev)
+
+
+def test_a_cheap_question_about_used_cars_finds_nothing():
+    """Every row is a new car. 'new' is neutral to the fallback, 'used' is not."""
+    from autoedits.cars import facts_for
+    assert facts_for("cheapest used car in uae") == ""
+
+
+def test_an_expiry_block_is_announced_three_weeks_ahead():
+    """325 car and fact rows expire on 5-7 Dec, 189 more by 22 Jan. Nothing
+    said so until the nightly run quietly stopped finding data."""
+    import datetime as _dt
+    from autoedits import cars
+    real = cars.date
+    class Day(_dt.date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 11, 20)
+    cars.date = Day
+    try:
+        warn = cars.expiry_warning()
+    finally:
+        cars.date = real
+    assert warn and "cars.csv" in warn and "Dec" in warn, warn
+    month_row = {"basis": "October 2026"}
+    assert cars.expires_on(month_row) == _dt.date(2026, 11, 1)
+    assert cars.expires_on({"basis": "December 2026"}) == _dt.date(2027, 1, 1)
 
 
 if __name__ == "__main__":

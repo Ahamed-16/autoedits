@@ -207,6 +207,17 @@ def check(query: str, indent: str = "  ", queued: bool = True) -> bool:
         print(f"{indent}            python -m autoedits.cars --why "
               f"{query!r}")
 
+    from .cars import junk_reason
+    if (junk := junk_reason(query)):
+        if query in db.hand_written() or not queued:
+            print(f"{indent}words     {junk}; a harvested phrase like this is "
+                  f"skipped, but one you add is built")
+        else:
+            ok = False
+            print(f"{indent}words     SKIPPED: {junk}. Autocomplete adds a word to "
+                  f"a seed, and the\n{indent}          rows answer the seed, not that "
+                  f"word. --add it if you mean it.")
+
     for sim, title in db.near_misses(query):
         print(f"{indent}overlap   {sim:.0%} with a video you made: {title!r}")
 

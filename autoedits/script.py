@@ -1055,6 +1055,33 @@ def generate(query: str, facts: str = "", writer: str | None = None) -> dict:
     return spec
 
 
+REPLY_TARGET = 2500        # successful scripts use about 2,400 tokens
+MIN_FACT_ROWS = 4
+
+
+def _reply_room(prompt: str) -> int:
+    return GROQ_TPM - TPM_RESERVE - int((len(SYSTEM) + len(prompt)) / 4 * TOKEN_FUDGE)
+
+
+def fit_facts(facts: str, build) -> str:
+    """Drop the lowest-ranked fact rows until the reply has room.
+
+    The writer call reserves its reply against the same 8,000 tokens a minute
+    as the prompt. Rows with long notes (Ducati's price lists, the Land
+    Cruiser trims) pushed 19 of 173 buildable topics under the 2,200 floor
+    on 29 Oct, and _fit_completion refuses those outright. facts_for ranks
+    best first, so the rows cut are the ones least likely to be used.
+    """
+    rows = facts.splitlines()
+    before = len(rows)
+    while len(rows) > MIN_FACT_ROWS and _reply_room(build("\n".join(rows))) < REPLY_TARGET:
+        rows.pop()
+    if len(rows) < before:
+        print(f"    facts trimmed {before} -> {len(rows)} rows so the reply "
+              f"fits the {GROQ_TPM}/min budget")
+    return "\n".join(rows)
+
+
 def _generate(query: str, facts: str = "", writer: str | None = None) -> dict:
     """Write a script for a search query.
 
@@ -1079,13 +1106,17 @@ def _generate(query: str, facts: str = "", writer: str | None = None) -> dict:
         "below is a motorcycle or scooter. Say motorcycle, bike or scooter, "
         "never car. Speeds in narration are \"kilometres an hour\".\n\n"
         if is_bike_query(query) else "")
-    prompt = (
-        f"{bike_brief}"
-        f"Search query to answer: \"{query}\"\n\n"
-        f"{'Verified facts you may use (prefer these over anything else):' if facts else ''}\n"
-        f"{facts}\n\n"
-        f"Return JSON in exactly this shape:\n{SCHEMA_HINT}"
-    )
+    def build(facts: str) -> str:
+        return (
+            f"{bike_brief}"
+            f"Search query to answer: \"{query}\"\n\n"
+            f"{'Verified facts you may use (prefer these over anything else):' if facts else ''}\n"
+            f"{facts}\n\n"
+            f"Return JSON in exactly this shape:\n{SCHEMA_HINT}"
+        )
+    if name == "groq":
+        facts = fit_facts(facts, build)
+    prompt = build(facts)
     raw = WRITERS[name](prompt)
     spec = _drop_nulls(_extract_json(raw))
     if "scenes" not in spec:          # flat shape from the constrained schema

@@ -16,6 +16,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
 from . import db
@@ -128,6 +129,25 @@ def upload(video_path: str, title: str, description: str, tags: list[str],
     return response["id"]
 
 
+def _not_the_videos_fault(exc: Exception) -> bool:
+    """A dead login or a spent daily quota, rather than a bad video.
+
+    #44-46 hit an expired login on 17 Sep and were marked failed, a status
+    nothing ever retried, so three approved videos sat there for five weeks.
+    """
+    text = str(exc)
+    if isinstance(exc, RefreshError) or "invalid_grant" in text:
+        return True
+    if isinstance(exc, HttpError):
+        status = getattr(exc.resp, "status", None)
+        if status == 401:
+            return True
+        if status == 403 and ("quotaExceeded" in text
+                              or "uploadLimitExceeded" in text):
+            return True
+    return False
+
+
 def upload_approved(limit: int = 5, privacy: str = "public") -> list[tuple[int, str]]:
     """Ship everything you approved. Returns (video_id, youtube_id) pairs."""
     done = []
@@ -138,6 +158,15 @@ def upload_approved(limit: int = 5, privacy: str = "public") -> list[tuple[int, 
             db.mark_published(row["id"], yt_id)
             done.append((row["id"], yt_id))
         except Exception as exc:                      # noqa: BLE001
+            if _not_the_videos_fault(exc):
+                # Leave it approved, and stop: every video after it would hit
+                # the same dead login.
+                db.note_video(row["id"], "waiting for the YouTube login: "
+                              + str(exc)[:400])
+                print(f"  YouTube login problem: {str(exc)[:160]}\n"
+                      f"  Nothing was marked failed; approved videos stay "
+                      f"queued. Fix it with: python -m autoedits.publish --auth")
+                break
             db.set_status(row["id"], "failed", str(exc)[:500])
     # Instagram follows YouTube, from the same approval. It is off until
     # instagram.enabled is set in config.yaml, and a failure there is recorded
@@ -146,6 +175,59 @@ def upload_approved(limit: int = 5, privacy: str = "public") -> list[tuple[int, 
     if instagram.ENABLED and done:
         instagram.post_pending(limit=len(done))
     return done
+
+
+def list_failed() -> list:
+    rows = db.failed()
+    if not rows:
+        print("No failed uploads.")
+    for r in rows:
+        print(f"  #{r['id']:<4} {r['title'][:55]:<55} {(r['note'] or '')[:70]}")
+    if rows:
+        print("\n  python -m autoedits.publish --retry <id>    re-check it, then queue it")
+        print("  python -m autoedits.publish --discard <id>  retire it")
+    return rows
+
+
+def retry(video_id: int) -> bool:
+    """Queue a failed upload again, but only if it would be built today.
+
+    A video that failed weeks ago was checked against the rules of weeks ago.
+    #44-46 are the early three-line format with no figures at all, which the
+    pipeline now refuses to build; re-queueing them unexamined would publish
+    exactly what the checks exist to stop.
+    """
+    from . import cars, script
+
+    row = db.get_video(video_id)
+    if row is None or row["status"] != "failed":
+        print(f"  #{video_id} is not a failed upload.")
+        return False
+    spec = {"title": row["title"], "scenes": json.loads(row["scenes"] or "[]"),
+            "description": row["description"] or ""}
+    with db.conn() as c:
+        t = c.execute("SELECT query FROM topics WHERE id=?",
+                      (row["topic_id"],)).fetchone()
+    facts = cars.facts_for((t["query"] if t else None) or row["title"])
+    problems = []
+    if not script.has_evidence(spec):
+        problems.append("no stat or comparison scene: today's pipeline would "
+                        "not build it")
+    problems += script._narration_faults(spec, facts)
+    if problems:
+        print(f"  #{video_id} was not re-queued. It fails today's checks:")
+        for p in problems[:6]:
+            print(f"    {p[:150]}")
+        print(f"  Retire it with: python -m autoedits.publish --discard {video_id}")
+        return False
+    db.set_status(video_id, "approved", "re-queued after a failed upload")
+    print(f"  #{video_id} passes today's checks and is queued for upload.")
+    return True
+
+
+def discard(video_id: int) -> None:
+    db.set_status(video_id, "rejected", "discarded after a failed upload")
+    print(f"  #{video_id} retired.")
 
 
 def sync_metrics() -> int:
@@ -224,6 +306,20 @@ if __name__ == "__main__":
         TOKEN.unlink(missing_ok=True)
         raise SystemExit(token_status())
 
+    if "--failed" in args:
+        list_failed()
+        raise SystemExit(0)
+
+    for flag, fn in (("--retry", retry), ("--discard", discard)):
+        if flag in args:
+            ids = [int(a) for a in args[args.index(flag) + 1:] if a.isdigit()]
+            if not ids:
+                print(f"Give it a draft number: python -m autoedits.publish {flag} 44")
+                raise SystemExit(2)
+            for vid in ids:
+                fn(vid)
+            raise SystemExit(0)
+
     if "--metrics" in args:
         n = sync_metrics()
         print(f"Updated stats for {n} published video(s).")
@@ -240,6 +336,5 @@ if __name__ == "__main__":
         print(f"  draft #{vid} → https://youtu.be/{yt_id}")
     failed = len(pending) - len(done)
     if failed:
-        print(f"  {failed} failed — check the note column in the database, or "
-              f"run: python -m autoedits.publish --check")
+        print(f"  {failed} not uploaded. See why with: python -m autoedits.publish --failed")
     raise SystemExit(1 if failed else 0)

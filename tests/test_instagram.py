@@ -220,6 +220,142 @@ def test_the_caption_fits_and_carries_hashtags():
     assert c.endswith("#uaemotorcycle #helmetfine #dubai"), c[-60:]
 
 
+# ------------------------------------------------------------------ stats --
+
+class _StatsNet:
+    """Fake media and insights endpoints for three posted Reels."""
+
+    def __init__(self, insights="ok", gone=(), blocked=False):
+        self.calls = []
+        self.insights, self.gone, self.blocked = insights, set(gone), blocked
+
+    def __call__(self, method, path, token, **params):
+        self.calls.append(path)
+        if path == "refresh_access_token":
+            raise I.InstagramError("too new (code 190)")
+        if self.blocked:
+            raise I.InstagramError("API access blocked. (code 200, subcode None)",
+                                   code=200)
+        media = path.split("/")[0]
+        if media in self.gone:
+            raise I.InstagramError("Unsupported get request. Object with ID "
+                                   f"'{media}' does not exist (code 100, subcode 33)",
+                                   code=100)
+        if path.endswith("/insights"):
+            if self.insights == "denied":
+                raise I.InstagramError(
+                    "(#10) Application does not have permission for this action "
+                    "(code 10, subcode None)", code=10)
+            if self.insights == "empty" or media == "m3":
+                return {"data": []}            # a Reel under a day old
+            return {"data": [
+                {"name": "views", "values": [{"value": 1520}]},
+                {"name": "reach", "values": [{"value": 1100}]},
+                {"name": "likes", "values": [{"value": 41}]},
+                {"name": "comments", "values": [{"value": 3}]},
+                {"name": "saved", "values": [{"value": 7}]},
+                {"name": "shares", "total_value": {"value": 5}},
+                {"name": "ig_reels_avg_watch_time", "values": [{"value": 8400}]}]}
+        return {"like_count": 40, "comments_count": 3, "id": media}
+
+
+def _stats_db():
+    from autoedits import db as D
+    tmp = tempfile.TemporaryDirectory()
+    old = D.DB_PATH
+    D.DB_PATH = Path(tmp.name) / "t.db"
+    D.init()
+    with D.conn() as c:
+        for vid, media in ((1, "m1"), (2, "m2"), (3, "m3"), (4, None)):
+            c.execute("INSERT INTO videos(id,status,title,tags,created_at,"
+                      "published_at,instagram_id,ig_status) VALUES "
+                      "(?,?,?,?,?,?,?,?)",
+                      (vid, "published", f"video {vid}", "[]", "2026-10-20",
+                       "2026-10-21", media, "posted" if media else "skipped"))
+    return D, old, tmp
+
+
+def _stats(net):
+    D, old, tmp = _stats_db()
+    try:
+        res, text, _ = _run(net, I.sync_metrics)
+        return res, {r["id"]: dict(r) for r in D.ig_performance()}
+    finally:
+        D.DB_PATH = old; tmp.cleanup()
+
+
+def test_stats_are_recorded_for_every_posted_reel():
+    res, rows = _stats(_StatsNet())
+    assert res["updated"] == 3 and not res["no_insights"], res
+    assert set(rows) == {1, 2, 3}, "a video never posted to Instagram was listed"
+    r = rows[1]
+    assert (r["views"], r["reach"], r["likes"], r["saved"], r["shares"],
+            r["avg_watch_ms"]) == (1520, 1100, 41, 7, 5, 8400), r
+    assert r["like_rate"] == 2.7, r["like_rate"]
+
+
+def test_a_new_reel_shows_blank_not_zero():
+    """Meta returns an empty set for the first day or so, not zeros."""
+    _, rows = _stats(_StatsNet())
+    r = rows[3]
+    assert r["views"] is None and r["reach"] is None, r
+    assert r["likes"] == 40, "likes from the media itself should still show"
+
+
+def test_without_the_insights_permission_likes_and_comments_still_come_back():
+    net = _StatsNet(insights="denied")
+    res, rows = _stats(net)
+    assert res["updated"] == 3 and "permission" in res["no_insights"], res
+    assert rows[1]["likes"] == 40 and rows[1]["views"] is None, rows[1]
+    asked = [p for p in net.calls if p.endswith("/insights")]
+    assert len(asked) == 1, f"asked for refused insights {len(asked)} times"
+
+
+def test_a_deleted_post_is_skipped_not_fatal():
+    res, rows = _stats(_StatsNet(gone={"m2"}))
+    assert res["gone"] == [2] and res["updated"] == 2, res
+    assert rows[2]["checked_at"] is None and rows[1]["views"] == 1520
+
+
+def test_an_account_block_stops_and_is_not_taken_for_a_missing_permission():
+    net = _StatsNet(blocked=True)
+    res, rows = _stats(net)
+    assert res["stopped"] and "blocked" in res["stopped"], res
+    assert res["updated"] == 0 and not res["no_insights"], res
+    assert len([p for p in net.calls if p != "refresh_access_token"]) == 1, net.calls
+
+
+def test_a_newly_pasted_token_replaces_the_renewed_one():
+    """After adding a permission you paste a new token into .env. The renewed
+    token saved in ig_token.json predates it and lacks the permission."""
+    net = _Net(refresh_ok=False)
+    def go():
+        I.TOKEN_FILE.write_text(json.dumps(
+            {"token": "IGAAold-renewed", "issued": I._now(),
+             "env_hash": I._env_hash("IGAAold-from-env")}))
+        return I.token()
+    tok, _, _ = _run(net, go, env_token="IGAAnew-with-insights")
+    assert tok == "IGAAnew-with-insights", "the new .env token was ignored"
+
+    def same():
+        I.TOKEN_FILE.write_text(json.dumps(
+            {"token": "IGAAold-renewed", "issued": I._now(),
+             "env_hash": I._env_hash(SECRET)}))
+        return I.token()
+    tok, _, _ = _run(net, same)
+    assert tok == "IGAAold-renewed", "the renewed token was dropped for no reason"
+
+
+def test_the_stats_report_never_prints_the_token():
+    D, old, tmp = _stats_db()
+    try:
+        code, text, _ = _run(_StatsNet(insights="denied"), I.stats_report)
+    finally:
+        D.DB_PATH = old; tmp.cleanup()
+    assert code == 0 and SECRET not in text, text
+    assert "manage_insights" in text and "1,520" not in text, text
+
+
 if __name__ == "__main__":
     bad = 0
     for name, fn in sorted(globals().items()):
